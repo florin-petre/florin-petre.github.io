@@ -774,6 +774,20 @@ p {
   text-align: center;
 }
 
+.form-error {
+  margin: 15px 0 0;
+  padding: 11px;
+  background: #f4e7e2;
+  color: #8a352d;
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+.submit-button:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
 .toast {
   position: fixed;
   z-index: 5;

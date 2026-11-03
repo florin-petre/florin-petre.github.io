@@ -5,6 +5,9 @@ const inquiryItems = document.querySelector(".inquiry-items");
 const emptyMessage = document.querySelector(".empty-message");
 const toast = document.querySelector(".toast");
 const form = document.querySelector("#inquiry-form");
+const formSuccess = form.querySelector(".form-success");
+const formError = form.querySelector(".form-error");
+const submitButton = form.querySelector(".submit-button");
 const nav = document.querySelector("#main-nav");
 const menuToggle = document.querySelector(".menu-toggle");
 let toastTimeout;
@@ -90,13 +93,66 @@ dialog.addEventListener("click", (event) => {
   if (event.target === dialog) dialog.close();
 });
 
-form.addEventListener("submit", (event) => {
+form.addEventListener("submit", async (event) => {
   event.preventDefault();
+  formSuccess.hidden = true;
+  formError.hidden = true;
+
   if (cart.size === 0) {
-    showToast("Adaugă cel puțin un model în cerere.");
+    formError.textContent = "Adaugă cel puțin un model în cerere.";
+    formError.hidden = false;
     return;
   }
-  form.querySelector(".form-success").hidden = false;
+
+  const chairRequest = [...cart]
+    .map(([name, item]) => `${name}: ${item.quantity} buc. × ${item.price} lei`)
+    .join("\n");
+  const estimatedSubtotal = [...cart.values()].reduce(
+    (total, item) => total + item.price * item.quantity,
+    0,
+  );
+  form.querySelector("#chair-request").value = chairRequest;
+  form.querySelector("#estimated-subtotal").value = `${estimatedSubtotal} lei (estimativ, fără transport și manipulare)`;
+
+  submitButton.disabled = true;
+  submitButton.setAttribute("aria-busy", "true");
+  submitButton.firstChild.textContent = "Se trimite...";
+
+  try {
+    const response = await fetch(form.action, {
+      method: "POST",
+      body: new FormData(form),
+      headers: { Accept: "application/json" },
+    });
+
+    if (!response.ok) {
+      let message = `Trimiterea nu a reușit (cod ${response.status}). Încearcă din nou.`;
+      try {
+        const result = await response.json();
+        if (Array.isArray(result.errors) && result.errors.length > 0) {
+          message = result.errors.map((error) => error.message).join(" ");
+        }
+      } catch {
+        // Keep the explicit HTTP status message if the response isn't JSON.
+      }
+      throw new Error(message);
+    }
+
+    formSuccess.textContent = "Mulțumim! Cererea a fost trimisă. Te vom contacta pentru a confirma disponibilitatea.";
+    formSuccess.hidden = false;
+    form.reset();
+    cart.clear();
+    updateCart();
+  } catch (error) {
+    formError.textContent = error instanceof Error
+      ? error.message
+      : "Nu am putut trimite cererea. Verifică-ți conexiunea și încearcă din nou.";
+    formError.hidden = false;
+  } finally {
+    submitButton.disabled = false;
+    submitButton.removeAttribute("aria-busy");
+    submitButton.firstChild.textContent = "Trimite cererea ";
+  }
 });
 
 menuToggle.addEventListener("click", () => {

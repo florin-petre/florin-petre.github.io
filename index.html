@@ -145,7 +145,7 @@
     </footer>
 
     <dialog class="inquiry-dialog" aria-labelledby="dialog-title">
-      <form class="dialog-content" id="inquiry-form">
+      <form class="dialog-content" id="inquiry-form" action="https://formspree.io/f/xwllapgz" method="POST">
         <button class="dialog-close" type="button" aria-label="Închide" data-close-inquiry>×</button>
         <p class="eyebrow eyebrow-dark"><span></span> Cerere de ofertă</p>
         <h2 id="dialog-title">Să începem <em>planificarea.</em></h2>
@@ -155,10 +155,15 @@
         <label class="form-label" for="customer-name">Numele tău</label>
         <input id="customer-name" name="name" autocomplete="name" placeholder="Cum te numești?" required />
         <label class="form-label" for="customer-phone">Telefon sau e-mail</label>
-        <input id="customer-phone" name="contact" autocomplete="email" placeholder="Cum te putem contacta?" required />
-        <button class="button button-dark submit-button" type="submit">Trimite cererea demo <span aria-hidden="true">↗</span></button>
-        <p class="demo-note">Acesta este un demo: formularul nu transmite date către un server.</p>
-        <p class="form-success" role="status" hidden>Mulțumim! Cererea ta demo este pregătită.</p>
+        <input id="customer-phone" name="contact" autocomplete="on" placeholder="Cum te putem contacta?" required />
+        <input type="hidden" name="_subject" value="Cerere nouă de închiriere scaune" />
+        <input type="hidden" name="chair_request" id="chair-request" />
+        <input type="hidden" name="estimated_subtotal" id="estimated-subtotal" />
+        <input type="text" name="_gotcha" tabindex="-1" autocomplete="off" hidden />
+        <button class="button button-dark submit-button" type="submit">Trimite cererea <span aria-hidden="true">↗</span></button>
+        <p class="demo-note">Cererea va fi trimisă în siguranță prin Formspree. Trimiterea nu reprezintă o rezervare confirmată.</p>
+        <p class="form-success" role="status" hidden></p>
+        <p class="form-error" role="alert" hidden></p>
       </form>
     </dialog>
     <div class="toast" role="status" aria-live="polite"></div>
