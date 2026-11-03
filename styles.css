@@ -363,8 +363,7 @@ p {
   color: #71766c;
 }
 
-.section-heading h2,
-.contact-strip h2 {
+.section-heading h2 {
   margin: 0;
   color: var(--ink);
   font-size: clamp(34px, 4vw, 47px);
@@ -372,8 +371,7 @@ p {
   line-height: 1.12;
 }
 
-.section-heading h2 em,
-.contact-strip h2 em {
+.section-heading h2 em {
   color: var(--green);
 }
 
@@ -554,19 +552,121 @@ p {
   transition: color 160ms ease;
 }
 
-.contact-strip {
+.contact-section {
   max-width: 1170px;
-  min-height: 190px;
+  margin: 0 auto;
+  min-height: calc(100vh - 217px);
+  padding: 82px 40px 72px;
+}
+
+.contact-heading {
+  max-width: 550px;
+  margin: 0 auto 34px;
+  text-align: center;
+}
+
+.contact-heading .eyebrow {
+  justify-content: center;
+}
+
+.contact-heading h1 {
+  margin: 0 0 12px;
+  font-family: var(--serif);
+  font-size: clamp(38px, 4vw, 49px);
+  font-weight: 500;
+  letter-spacing: -0.04em;
+}
+
+.contact-heading h1 em {
+  color: var(--green);
+  font-weight: 500;
+}
+
+.contact-heading > p:last-child {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.8;
+}
+
+.contact-details {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border: 1px solid var(--line);
+}
+
+.contact-card {
+  min-width: 0;
+  padding: 23px 20px 21px;
+}
+
+.contact-card + .contact-card {
+  border-left: 1px solid var(--line);
+}
+
+.contact-icon {
+  width: 31px;
+  height: 31px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 15px;
+  border-radius: 50%;
+  background: #e9ece5;
+  color: var(--green);
+  font-family: var(--serif);
+  font-size: 15px;
+}
+
+.contact-card h2 {
+  margin: 0 0 8px;
+  font-family: var(--serif);
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.contact-card > a,
+.contact-value {
+  display: block;
+  margin: 0 0 6px;
+  color: var(--green);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.contact-card > a:hover {
+  color: var(--gold);
+}
+
+.contact-card > p:last-child {
+  margin: 0;
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.7;
+}
+
+.contact-demo-note {
+  margin-top: 12px;
+  color: #85877f;
+  font-size: 9px;
+  text-align: center;
+}
+
+.contact-cta {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 25px;
-  margin: 0 auto;
-  padding: 45px 40px;
+  gap: 18px;
+  margin-top: 39px;
+  padding-top: 25px;
+  border-top: 1px solid var(--line);
 }
 
-.contact-strip h2 {
-  font-size: clamp(29px, 3.4vw, 39px);
+.contact-cta p {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 20px;
 }
 
 .button-dark {
@@ -690,15 +790,23 @@ p {
   font-size: 9px;
 }
 
+.item-total {
+  margin-top: 5px;
+  color: var(--green);
+  font-size: 10px;
+  font-weight: 600;
+}
+
 .quantity-controls {
   display: flex;
   align-items: center;
-  gap: 11px;
+  gap: 7px;
 }
 
 .quantity-controls button {
   width: 26px;
   height: 26px;
+  flex: 0 0 26px;
   border: 1px solid var(--line);
   border-radius: 50%;
   background: transparent;
@@ -706,10 +814,40 @@ p {
   cursor: pointer;
 }
 
-.quantity-controls span {
-  min-width: 12px;
+.quantity-controls input {
+  width: 66px;
+  min-height: 34px;
+  padding: 0 4px;
+  border: 1px solid var(--line);
+  background: var(--white);
+  color: var(--ink);
   font-size: 11px;
   text-align: center;
+}
+
+.quantity-controls input:focus {
+  border-color: var(--green);
+}
+
+.inquiry-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 4px 0 17px;
+  padding: 14px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  font-size: 11px;
+}
+
+.inquiry-summary[hidden] {
+  display: none;
+}
+
+.inquiry-summary strong {
+  color: var(--green);
+  font-size: 16px;
 }
 
 .empty-message {
@@ -733,9 +871,15 @@ p {
   font-weight: 600;
 }
 
-.dialog-content input {
+.contact-hint {
+  margin: 7px 0 0;
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.dialog-content input,
+.dialog-content textarea {
   width: 100%;
-  min-height: 43px;
   padding: 0 12px;
   border: 1px solid var(--line);
   border-radius: 0;
@@ -745,11 +889,24 @@ p {
   font-size: 11px;
 }
 
-.dialog-content input:focus {
+.dialog-content input {
+  min-height: 43px;
+}
+
+.dialog-content textarea {
+  min-height: 100px;
+  padding: 12px;
+  resize: vertical;
+  line-height: 1.6;
+}
+
+.dialog-content input:focus,
+.dialog-content textarea:focus {
   border-color: var(--green);
 }
 
-.dialog-content input::placeholder {
+.dialog-content input::placeholder,
+.dialog-content textarea::placeholder {
   color: #a4a49d;
 }
 
@@ -931,9 +1088,43 @@ p {
     font-size: 17px;
   }
 
-  .contact-strip {
-    min-height: 160px;
-    padding: 35px 5%;
+  .contact-section {
+    padding: 65px 5% 55px;
+  }
+
+  .contact-page .site-header {
+    height: auto;
+    min-height: 70px;
+    flex-wrap: wrap;
+    padding: 14px 5%;
+  }
+
+  .contact-page .menu-toggle {
+    display: none;
+  }
+
+  .contact-page .main-nav {
+    position: static;
+    display: flex;
+    flex: 1 1 auto;
+    gap: 16px;
+    margin: 0 auto;
+    padding: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .contact-page .main-nav a {
+    padding: 8px 0;
+    font-size: 10px;
+  }
+
+  .contact-page .inquiry-button {
+    margin-left: auto;
+  }
+
+  .contact-card {
+    padding: 19px 14px;
   }
 
   .site-footer {
@@ -949,6 +1140,28 @@ p {
 
   .site-header {
     gap: 9px;
+  }
+
+  .contact-page .site-header {
+    row-gap: 8px;
+  }
+
+  .contact-page .brand {
+    order: 1;
+  }
+
+  .contact-page .inquiry-button {
+    order: 2;
+  }
+
+  .contact-page .main-nav {
+    order: 3;
+    flex: 1 0 100%;
+    justify-content: space-around;
+    gap: 10px;
+    margin: 0;
+    padding-top: 6px;
+    border-top: 1px solid var(--line);
   }
 
   .main-nav {
@@ -1052,11 +1265,34 @@ p {
     font-size: 140px;
   }
 
-  .contact-strip {
-    align-items: start;
+  .contact-heading h2 {
+    font-size: 40px;
+  }
+
+  .contact-details {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .contact-card {
+    padding: 17px 13px;
+  }
+
+  .contact-card:nth-child(3) {
+    border-left: 0;
+  }
+
+  .contact-card:nth-child(n + 3) {
+    border-top: 1px solid var(--line);
+  }
+
+  .contact-cta {
+    align-items: flex-start;
     flex-direction: column;
-    gap: 20px;
-    padding: 38px 7%;
+    margin-top: 29px;
+  }
+
+  .contact-cta p {
+    font-size: 18px;
   }
 
   .contact-strip h2 {

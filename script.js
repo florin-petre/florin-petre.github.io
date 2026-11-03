@@ -2,6 +2,8 @@ const cart = new Map();
 const dialog = document.querySelector(".inquiry-dialog");
 const cartCount = document.querySelector(".cart-count");
 const inquiryItems = document.querySelector(".inquiry-items");
+const inquirySummary = document.querySelector(".inquiry-summary");
+const inquiryTotal = document.querySelector("#inquiry-total");
 const emptyMessage = document.querySelector(".empty-message");
 const toast = document.querySelector(".toast");
 const form = document.querySelector("#inquiry-form");
@@ -12,6 +14,10 @@ const nav = document.querySelector("#main-nav");
 const menuToggle = document.querySelector(".menu-toggle");
 let toastTimeout;
 
+function formatLei(amount) {
+  return `${new Intl.NumberFormat("ro-RO").format(amount)} lei`;
+}
+
 function showToast(message) {
   toast.textContent = message;
   toast.classList.add("visible");
@@ -21,7 +27,13 @@ function showToast(message) {
 
 function updateCart() {
   const totalCount = [...cart.values()].reduce((sum, item) => sum + item.quantity, 0);
+  const estimatedTotal = [...cart.values()].reduce(
+    (total, item) => total + item.price * item.quantity,
+    0,
+  );
   cartCount.textContent = totalCount;
+  inquiryTotal.textContent = formatLei(estimatedTotal);
+  inquirySummary.hidden = cart.size === 0;
   inquiryItems.replaceChildren();
 
   for (const [name, item] of cart) {
@@ -34,8 +46,11 @@ function updateCart() {
     title.textContent = name;
     const price = document.createElement("div");
     price.className = "item-price";
-    price.textContent = `${item.price} lei / buc.`;
-    details.append(title, price);
+    price.textContent = `${formatLei(item.price)} / scaun`;
+    const lineTotal = document.createElement("div");
+    lineTotal.className = "item-total";
+    lineTotal.textContent = `${formatLei(item.price * item.quantity)} total`;
+    details.append(title, price, lineTotal);
 
     const controls = document.createElement("div");
     controls.className = "quantity-controls";
@@ -44,8 +59,22 @@ function updateCart() {
     decrement.textContent = "−";
     decrement.setAttribute("aria-label", `Scade cantitatea pentru ${name}`);
     decrement.addEventListener("click", () => changeQuantity(name, -1));
-    const quantity = document.createElement("span");
-    quantity.textContent = item.quantity;
+    const quantity = document.createElement("input");
+    quantity.type = "number";
+    quantity.min = "1";
+    quantity.step = "1";
+    quantity.inputMode = "numeric";
+    quantity.value = item.quantity;
+    quantity.setAttribute("aria-label", `Număr de scaune: ${name}`);
+    quantity.addEventListener("change", () => {
+      const newQuantity = Number(quantity.value);
+      if (!Number.isSafeInteger(newQuantity) || newQuantity < 1) {
+        quantity.value = item.quantity;
+        return;
+      }
+      item.quantity = newQuantity;
+      updateCart();
+    });
     const increment = document.createElement("button");
     increment.type = "button";
     increment.textContent = "+";
@@ -104,6 +133,15 @@ form.addEventListener("submit", async (event) => {
     return;
   }
 
+  const phone = form.querySelector("#customer-phone").value.trim();
+  const email = form.querySelector("#customer-email").value.trim();
+  if (!phone && !email) {
+    formError.textContent = "Completează cel puțin un câmp: telefon sau e-mail.";
+    formError.hidden = false;
+    form.querySelector("#customer-phone").focus();
+    return;
+  }
+
   const chairRequest = [...cart]
     .map(([name, item]) => `${name}: ${item.quantity} buc. × ${item.price} lei`)
     .join("\n");
@@ -112,7 +150,7 @@ form.addEventListener("submit", async (event) => {
     0,
   );
   form.querySelector("#chair-request").value = chairRequest;
-  form.querySelector("#estimated-subtotal").value = `${estimatedSubtotal} lei (estimativ, fără transport și manipulare)`;
+  form.querySelector("#estimated-subtotal").value = `${formatLei(estimatedSubtotal)} (estimativ, fără transport și manipulare)`;
 
   submitButton.disabled = true;
   submitButton.setAttribute("aria-busy", "true");

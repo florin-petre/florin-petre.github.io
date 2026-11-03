@@ -31,7 +31,7 @@
       <nav class="main-nav" id="main-nav" aria-label="Navigare principală">
         <a href="#colectie">Colecția</a>
         <a href="#despre">Povestea noastră</a>
-        <a href="#contact">Contact</a>
+        <a href="contact.html">Contact</a>
       </nav>
 
       <button class="inquiry-button" type="button" data-open-inquiry>
@@ -121,17 +121,7 @@
         <p class="eyebrow"><span></span> Pentru clipele care contează</p>
         <h2 id="story-title">O atmosferă frumoasă<br />începe cu <em>un loc al tău.</em></h2>
         <p>Ne plac întâlnirile care se prelungesc, mesele pline și decorurile care te fac să te simți acasă.</p>
-        <a class="text-link" href="#contact">Hai să povestim <span aria-hidden="true">↗</span></a>
-      </section>
-
-      <section class="contact-strip" id="contact">
-        <div>
-          <p class="eyebrow eyebrow-dark"><span></span> Planifici un eveniment?</p>
-          <h2>Hai să-i găsim <em>locul potrivit.</em></h2>
-        </div>
-        <button class="button button-dark" type="button" data-open-inquiry>
-          Cere o ofertă <span aria-hidden="true">↗</span>
-        </button>
+        <a class="text-link" href="contact.html">Hai să povestim <span aria-hidden="true">↗</span></a>
       </section>
     </main>
 
@@ -149,13 +139,22 @@
         <button class="dialog-close" type="button" aria-label="Închide" data-close-inquiry>×</button>
         <p class="eyebrow eyebrow-dark"><span></span> Cerere de ofertă</p>
         <h2 id="dialog-title">Să începem <em>planificarea.</em></h2>
-        <p class="dialog-hint">Alege câte scaune ai nevoie și lasă-ne datele tale. Revenim cu detaliile evenimentului.</p>
+        <p class="dialog-hint">Alege cantitatea pentru fiecare model și lasă-ne datele tale. Totalul este estimativ; transportul și manipularea se calculează separat.</p>
         <div class="inquiry-items" aria-live="polite"></div>
+        <div class="inquiry-summary" aria-live="polite" hidden>
+          <span>Total estimativ închiriere</span>
+          <strong id="inquiry-total">0 lei</strong>
+        </div>
         <p class="empty-message">Cererea ta e goală. Adaugă un scaun din colecție ca să începem.</p>
         <label class="form-label" for="customer-name">Numele tău</label>
         <input id="customer-name" name="name" autocomplete="name" placeholder="Cum te numești?" required />
-        <label class="form-label" for="customer-phone">Telefon sau e-mail</label>
-        <input id="customer-phone" name="contact" autocomplete="on" placeholder="Cum te putem contacta?" required />
+        <label class="form-label" for="customer-phone">Telefon</label>
+        <input id="customer-phone" name="phone" type="tel" autocomplete="tel" placeholder="Număr de telefon (opțional)" />
+        <label class="form-label" for="customer-email">E-mail</label>
+        <input id="customer-email" name="email" type="email" autocomplete="email" placeholder="Adresa de e-mail (opțional)" />
+        <p class="contact-hint">Completează cel puțin un câmp: telefon sau e-mail.</p>
+        <label class="form-label" for="customer-message">Mesaj (opțional)</label>
+        <textarea id="customer-message" name="message" rows="4" maxlength="2000" placeholder="Spune-ne câteva detalii despre eveniment, dată sau ce ai nevoie..."></textarea>
         <input type="hidden" name="_subject" value="Cerere nouă de închiriere scaune" />
         <input type="hidden" name="chair_request" id="chair-request" />
         <input type="hidden" name="estimated_subtotal" id="estimated-subtotal" />
