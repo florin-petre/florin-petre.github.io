@@ -1030,12 +1030,12 @@ document.querySelector("#account-form").addEventListener("submit", async event =
   }
   if (result.error) {
     const message = result.error.message || "Unknown authentication error.";
-    const normalizedMessage = message.toLowerCase();
-    const friendlyMessage = signup && /(already registered|already exists|user already)/.test(normalizedMessage)
+    const errorCode = result.error.code || "";
+    const friendlyMessage = signup && ["email_exists", "user_already_exists"].includes(errorCode)
       ? "That username already has a profile. Log in instead, or choose another name."
-      : signup && /(invalid email|email address.*invalid)/.test(normalizedMessage)
+      : signup && errorCode === "email_address_invalid"
         ? "Supabase rejected the username-based account address. Check the Email provider settings and share this error with the site owner."
-        : signup && /(signup.*disabled|signups not allowed)/.test(normalizedMessage)
+        : signup && errorCode === "signup_disabled"
           ? "New accounts are disabled in Supabase. Enable signups under Authentication settings."
           : `${signup ? "Profile creation failed" : "Login failed"}: ${message}`;
     setAccountStatus(friendlyMessage, "error");
