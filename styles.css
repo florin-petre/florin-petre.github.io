@@ -352,6 +352,92 @@ button { color: inherit; }
 .status-card .eyebrow { color: var(--faint); font-size: 8px; }
 .status-card p { margin: 4px 0 0; font-size: 12px; line-height: 1.45; }
 .setup-card, .online-card, .rift-card { padding: 15px; }
+.account-form {
+  display: grid;
+  gap: 9px;
+}
+.account-form label, .challenge-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 10px;
+}
+.account-form input, .challenge-field input {
+  width: 100%;
+  min-width: 0;
+  padding: 9px;
+  border: 1px solid #394540;
+  border-radius: 5px;
+  outline: none;
+  color: var(--text);
+  background: #151c1b;
+  font-size: 11px;
+}
+.account-form input:focus-visible, .challenge-field input:focus-visible { border-color: var(--accent); }
+.text-button {
+  padding: 5px;
+  border: 0;
+  color: var(--accent);
+  background: transparent;
+  cursor: pointer;
+  font-size: 10px;
+}
+.signed-in-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+  color: var(--muted);
+  font-size: 10px;
+}
+.signed-in-row strong { color: var(--text); }
+.signed-in-row .secondary-button { min-height: 31px; padding: 0 10px; }
+.challenge-field { margin-bottom: 8px; }
+.directory-heading {
+  margin: 15px 0 7px;
+  color: var(--faint);
+  font: 9px "DM Mono", monospace;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.player-directory { display: flex; flex-direction: column; gap: 6px; }
+.directory-player, .incoming-room {
+  display: grid;
+  grid-template-columns: 8px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  padding: 7px;
+  border-radius: 5px;
+  background: #151c1b;
+}
+.directory-player strong, .incoming-room strong {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 10px;
+  text-overflow: ellipsis;
+}
+.presence-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #69756e;
+}
+.presence-dot.online { background: var(--accent); box-shadow: 0 0 7px rgba(196, 239, 140, .4); }
+.presence-label { color: var(--muted); font-size: 9px; }
+.directory-invite, .join-room-button { min-height: 29px; padding: 0 8px; font-size: 9px; }
+.directory-invite:disabled { opacity: .48; cursor: default; }
+.incoming-room { grid-template-columns: minmax(0, 1fr) auto; }
+.incoming-room > span { color: var(--muted); font-size: 10px; }
+.account-note {
+  margin: 10px 0 0;
+  color: var(--faint);
+  font-size: 9px;
+  line-height: 1.5;
+}
+.account-form[hidden], #account-dashboard[hidden] { display: none; }
 .section-title { margin-bottom: 13px; }
 .section-title .eyebrow { color: var(--faint); font-size: 8px; }
 .section-title h2 {
@@ -471,28 +557,6 @@ button { color: inherit; }
   font-size: 10px;
   line-height: 1.55;
 }
-.invite-link-row { margin-top: 12px; }
-.invite-link-row[hidden] { display: none; }
-.invite-link-row > label {
-  display: block;
-  margin-bottom: 5px;
-  color: var(--faint);
-  font: 8px "DM Mono", monospace;
-  letter-spacing: .1em;
-}
-.invite-link-controls { display: flex; gap: 7px; }
-.invite-link-controls input {
-  width: 0;
-  min-width: 0;
-  flex: 1;
-  padding: 0 8px;
-  border: 1px solid #394540;
-  border-radius: 5px;
-  color: #dce4dc;
-  background: #151c1b;
-  font: 9px "DM Mono", monospace;
-}
-.invite-link-controls .secondary-button { min-width: 58px; padding: 0 10px; }
 .room-status {
   margin: 10px 0 0;
   color: #87958c;
@@ -595,6 +659,7 @@ button { color: inherit; }
   .panel-heading p { max-width: 440px; }
   .action-row { grid-column: 1 / -1; }
   .setup-player { margin-bottom: 11px; }
+  .directory-player { grid-template-columns: 8px minmax(0, 1fr) auto auto; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }

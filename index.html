@@ -5,9 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#111717">
   <title>Rift Chess</title>
-  <link rel="stylesheet" href="styles.css?v=ready-lobby-2">
-  <script src="https://unpkg.com/peerjs@1.5.5/dist/peerjs.min.js" defer></script>
-  <script src="script.js?v=ready-lobby-2" defer></script>
+  <link rel="stylesheet" href="styles.css?v=profiles-rooms-2">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js?v=profiles-rooms-2" defer></script>
+  <script src="script.js?v=profiles-rooms-2" defer></script>
 </head>
 <body>
   <main class="app-shell">
@@ -77,6 +78,43 @@
           </div>
         </div>
 
+        <section class="online-card account-card" aria-labelledby="account-title">
+          <div class="section-title compact-title">
+            <span class="eyebrow">YOUR RIFT ID</span>
+            <h2 id="account-title">Player profile</h2>
+          </div>
+          <form id="account-form" class="account-form">
+            <label>Player name
+              <input id="account-username" type="text" minlength="3" maxlength="20" autocomplete="username" required pattern="[A-Za-z0-9_]+">
+            </label>
+            <label>Password
+              <input id="account-password" type="password" minlength="8" autocomplete="current-password" required>
+            </label>
+            <button class="primary-button" id="account-submit" type="submit">Log in</button>
+            <button class="text-button" id="account-mode-button" type="button">Create a new profile</button>
+          </form>
+          <div id="account-dashboard" hidden>
+            <div class="signed-in-row">
+              <span>Signed in as <strong id="signed-in-name"></strong></span>
+              <button class="secondary-button" id="logout-button" type="button">Log out</button>
+            </div>
+            <label class="challenge-field">Create a room for this player
+              <input id="challenge-username" type="text" maxlength="20" autocomplete="off" placeholder="Exact player name">
+            </label>
+            <button class="primary-button" id="create-room-button" type="button">Create private room</button>
+            <h3 class="directory-heading">Players</h3>
+            <div class="player-directory" id="player-directory" aria-live="polite">
+              <p class="empty-rifts">Sign in to find players.</p>
+            </div>
+            <h3 class="directory-heading">Rooms invited to you</h3>
+            <div class="player-directory" id="incoming-rooms" aria-live="polite">
+              <p class="empty-rifts">No room invitations.</p>
+            </div>
+          </div>
+          <p class="room-status" id="room-status" aria-live="polite">Setting up shared player profiles…</p>
+          <p class="account-note">Names are reserved to your password-protected profile. Password resets are unavailable for username-only accounts. See <a href="SUPABASE_SETUP.md">setup instructions</a>.</p>
+        </section>
+
         <section class="setup-card" id="setup-card" aria-labelledby="setup-title">
           <div class="section-title">
             <span class="eyebrow">BEFORE THE BATTLE</span>
@@ -84,7 +122,7 @@
           </div>
           <p class="setup-intro" id="setup-intro">Name both players, choose your pieces and powers, then both players lock in. The game stays locked until both are ready.</p>
           <div class="setup-player" data-color="w">
-            <div class="setup-player-title"><span class="mini-dot light-dot"></span> White <span class="setup-ready-status" id="white-ready-status">NOT READY</span></div>
+            <div class="setup-player-title"><span class="mini-dot light-dot"></span> White <span class="setup-ready-status" id="white-ready-status" aria-live="polite">NOT READY</span></div>
             <label class="player-name-field">Player name
               <input id="white-player-name" type="text" maxlength="24" autocomplete="nickname" value="White">
             </label>
@@ -119,7 +157,7 @@
             <button class="ready-button" id="white-ready-button" type="button">White is ready</button>
           </div>
           <div class="setup-player" data-color="b">
-            <div class="setup-player-title"><span class="mini-dot dark-dot"></span> Black <span class="setup-ready-status" id="black-ready-status">NOT READY</span></div>
+            <div class="setup-player-title"><span class="mini-dot dark-dot"></span> Black <span class="setup-ready-status" id="black-ready-status" aria-live="polite">NOT READY</span></div>
             <label class="player-name-field">Player name
               <input id="black-player-name" type="text" maxlength="24" autocomplete="nickname" value="Black">
             </label>
@@ -161,16 +199,7 @@
             <span class="eyebrow">PLAY WITH A FRIEND</span>
             <h2 id="online-title">Online rooms</h2>
           </div>
-          <p class="online-description">Create an invite link to play remotely. The host plays White; your friend joins as Black. You’ll see their name when they arrive. Both players lock their own choices before play begins.</p>
-          <button class="primary-button" id="create-room-button" type="button">Create online room <span aria-hidden="true">↗</span></button>
-          <div class="invite-link-row" id="invite-link-row" hidden>
-            <label for="invite-link">YOUR INVITE LINK</label>
-            <div class="invite-link-controls">
-              <input id="invite-link" type="text" readonly aria-label="Room invite link">
-              <button class="secondary-button" id="copy-invite-button" type="button">Copy</button>
-            </div>
-          </div>
-          <p class="room-status" id="room-status" aria-live="polite">Online play needs an HTTPS website (localhost works for testing).</p>
+          <p class="online-description">Log in, choose a player by their exact name, and create a private room. Only that account can join. The host stays online while the game is in progress; messages are synced through your player service.</p>
         </section>
 
         <section class="rift-card" aria-labelledby="rift-title">

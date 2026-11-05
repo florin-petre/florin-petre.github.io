@@ -21,8 +21,6 @@ const statusDot = document.querySelector("#status-dot");
 const riftList = document.querySelector("#rift-piece-list");
 const promotionDialog = document.querySelector("#promotion-dialog");
 const roomStatus = document.querySelector("#room-status");
-const inviteLinkRow = document.querySelector("#invite-link-row");
-const inviteLinkInput = document.querySelector("#invite-link");
 
 let state = null;
 let flipped = false;
@@ -30,11 +28,19 @@ let gameStarted = false;
 let pendingPromotion = null;
 let gameMode = "local";
 let playerColor = "w";
-let peer = null;
 let dataConnection = null;
-let roomToken = null;
 let remoteMovePending = false;
 let lobby = null;
+let supabaseClient = null;
+let currentUser = null;
+let accountProfile = null;
+let activeRoomId = null;
+let activeRoomOpponentId = null;
+let opponentIsOnline = false;
+let directoryTimer = null;
+let roomPollTimer = null;
+let roomHeartbeatTimer = null;
+let joinRetryTimer = null;
 
 function makePiece(color, type, rift = false, riftPower = null) {
   return { color, type, rift, riftPower, moves: 0 };
@@ -333,7 +339,7 @@ function updateCastlingRights(piece, from, captured, to) {
 function commitMove(from, move, promotion = "Q") {
   if (gameMode === "guest") {
     if (!dataConnection || !dataConnection.open) {
-      setRoomStatus("You are disconnected from the host. Reopen the invite link to rejoin.", "error");
+      setRoomStatus("This room is disconnected. Return to your player profile and rejoin the room.", "error");
       return;
     }
     dataConnection.send({
@@ -545,7 +551,9 @@ function renderPlayerStrips() {
         ? (isMyColor ? "YOUR TURN" : "THEIR TURN")
         : "WAITING";
     } else if (lobby) {
-      const opponentConnected = gameMode === "local" || Boolean(dataConnection && dataConnection.open);
+      const opponentConnected = gameMode === "local" ||
+        (gameMode === "host" ? Boolean(dataConnection && dataConnection.roomAuthenticated && opponentIsOnline) :
+          Boolean(dataConnection && dataConnection.open && opponentIsOnline));
       indicator.textContent = lobby[color].ready
         ? "READY"
         : isMyColor
@@ -631,6 +639,7 @@ function renderLobby() {
     for (const control of side.querySelectorAll("input, select")) {
       control.disabled = !isEditable || profile.ready || gameStarted;
     }
+    if (gameMode !== "local") nameField.disabled = true;
     readyButton.hidden = !isEditable;
     readyButton.disabled = profile.ready || gameStarted ||
       (gameMode !== "local" && (!dataConnection || !dataConnection.open));
@@ -649,10 +658,15 @@ function renderLobby() {
   } else if (gameMode === "host" || gameMode === "guest") {
     const otherColor = playerColor === "w" ? "b" : "w";
     intro.textContent = playerColor === "w"
-      ? "Choose your White name, pieces, and powers. Your friend joins as Black; both players must ready up before the board unlocks."
-      : "Choose your Black name, pieces, and powers. The host's White setup is shown above. Both players must ready up before the board unlocks.";
-    hint.textContent = !dataConnection || !dataConnection.open
-      ? "Waiting for your opponent to join the room."
+      ? "Choose your pieces and powers. Your profile name is White; the invited player joins as Black. Both players must ready up before the board unlocks."
+      : "Choose your pieces and powers. Your profile name is Black; the host's White setup is shown above. Both players must ready up before the board unlocks.";
+    const opponentConnected = gameMode === "host"
+      ? Boolean(dataConnection && dataConnection.roomAuthenticated && opponentIsOnline)
+      : Boolean(dataConnection && dataConnection.open && opponentIsOnline);
+    hint.textContent = !opponentConnected
+      ? (dataConnection && dataConnection.roomAuthenticated
+        ? `${lobby[otherColor].name} appears offline. Their ready status remains visible.`
+        : "Waiting for your opponent to join the room.")
       : lobby[playerColor].ready && lobby[otherColor].ready
         ? "Both players are ready. Waiting for the host to start the game."
       : lobby[otherColor].ready
@@ -725,6 +739,12 @@ function beginPreparedGame() {
   render();
   if (gameMode === "host") {
     dataConnection.send({ type: "start", state: roomSnapshot() });
+    if (activeRoomId) {
+      void supabaseClient.from("game_rooms")
+        .update({ status: "playing", updated_at: new Date().toISOString() })
+        .eq("id", activeRoomId)
+        .eq("host_id", currentUser.id);
+    }
     setRoomStatus("Both players are ready. The game is live!", "connected");
   }
 }
@@ -732,6 +752,7 @@ function beginPreparedGame() {
 function lockInPlayer(color) {
   if (lobby[color].ready || gameStarted) return;
   lobby[color] = readProfile(color);
+  if (gameMode !== "local" && accountProfile) lobby[color].name = accountProfile.username;
   lobby[color].ready = true;
   render();
   if (gameMode === "guest") {
@@ -742,7 +763,7 @@ function lockInPlayer(color) {
       return;
     }
     dataConnection.send({ type: "setup", player: "b", profile: lobby.b });
-    setRoomStatus("Your setup is locked. Waiting for the host to ready up.", "waiting");
+    setRoomStatus("Your setup is locked. The board starts after both players are ready.", "waiting");
   } else if (gameMode === "host") {
     sendLobby();
   }
@@ -764,11 +785,9 @@ document.querySelector("#new-game-button").addEventListener("click", () => {
   statusLabel.textContent = "GAME STATUS";
   statusElement.textContent = "Choose player names and rift loadouts, then both players ready up.";
   statusDot.classList.remove("in-check");
-  document.querySelector("#create-room-button").disabled = false;
-  document.querySelector("#create-room-button").innerHTML = 'Create online room <span aria-hidden="true">↗</span>';
-  inviteLinkRow.hidden = true;
-  inviteLinkInput.value = "";
-  setRoomStatus("Online play needs this page to be hosted on HTTPS.");
+  setRoomStatus(currentUser
+    ? `Signed in as ${accountProfile.username}. Select a player to create a private room.`
+    : "Log in or create a profile to play online.");
   render();
 });
 for (const color of ["w", "b"]) {
@@ -802,16 +821,317 @@ function setRoomStatus(message, kind = "") {
   else delete roomStatus.dataset.state;
 }
 
+function normalizeUsername(value) {
+  const username = value.trim().toLowerCase();
+  return /^[a-z0-9_]{3,20}$/.test(username) ? username : null;
+}
+
+function usernameEmail(username) {
+  return `${username}@accounts.riftchess.example.com`;
+}
+
+function setAccountMode(mode) {
+  const signup = mode === "signup";
+  document.querySelector("#account-form").dataset.mode = signup ? "signup" : "login";
+  document.querySelector("#account-submit").textContent = signup ? "Create profile" : "Log in";
+  document.querySelector("#account-mode-button").textContent = signup
+    ? "I already have a profile"
+    : "Create a new profile";
+  document.querySelector("#account-password").autocomplete = signup ? "new-password" : "current-password";
+}
+
+function setAccountStatus(message, kind = "") {
+  setRoomStatus(message, kind);
+}
+
+function renderPlayerDirectory(players) {
+  const directory = document.querySelector("#player-directory");
+  if (!players.length) {
+    directory.innerHTML = '<p class="empty-rifts">No other profiles yet.</p>';
+    return;
+  }
+  directory.innerHTML = players.map(player => {
+    const online = Date.now() - Date.parse(player.last_seen_at) < 90000;
+    return `<div class="directory-player">
+      <span class="presence-dot${online ? " online" : ""}" aria-hidden="true"></span>
+      <strong>${escapeHtml(player.username)}</strong>
+      <span class="presence-label">${online ? "Online" : "Offline"}</span>
+      <button class="secondary-button directory-invite" type="button" data-username="${escapeHtml(player.username)}"${online ? "" : " disabled"}>Invite</button>
+    </div>`;
+  }).join("");
+}
+
+async function refreshRooms() {
+  if (!currentUser || !supabaseClient) return;
+  const [{ data: players, error: playersError }, { data: rooms, error: roomsError }] = await Promise.all([
+    supabaseClient.from("profiles").select("id,username,last_seen_at")
+      .neq("id", currentUser.id).order("username"),
+    supabaseClient.from("game_rooms")
+      .select("id,host_name,invited_name,status,created_at,updated_at,host_id,invitee_id,guest_id")
+      .eq("invitee_id", currentUser.id)
+      .in("status", ["waiting", "connecting", "playing"])
+      .order("created_at", { ascending: false })
+  ]);
+  if (playersError) throw playersError;
+  if (roomsError) throw roomsError;
+  renderPlayerDirectory(players || []);
+  const activeRooms = (rooms || []).filter(room =>
+    ["waiting", "connecting", "playing"].includes(room.status) &&
+    Date.now() - Date.parse(room.updated_at) < 90000
+  );
+  const incoming = document.querySelector("#incoming-rooms");
+  incoming.innerHTML = activeRooms.length
+    ? activeRooms.map(room => `<div class="incoming-room">
+        <span><strong>${escapeHtml(room.host_name)}</strong> invited you</span>
+        <button class="primary-button join-room-button" type="button" data-room-id="${escapeHtml(room.id)}">${room.status === "waiting" ? "Join room" : "Rejoin room"}</button>
+      </div>`).join("")
+    : '<p class="empty-rifts">No room invitations.</p>';
+}
+
+function startRoomHeartbeat() {
+  if (roomHeartbeatTimer) window.clearInterval(roomHeartbeatTimer);
+  roomHeartbeatTimer = window.setInterval(async () => {
+    if (!currentUser || !supabaseClient) return;
+    try {
+      const now = new Date().toISOString();
+      const tasks = [
+        supabaseClient.rpc("touch_profile")
+      ];
+      if (activeRoomId && gameMode === "host") {
+        tasks.push(supabaseClient.from("game_rooms").update({ updated_at: now })
+          .eq("id", activeRoomId).eq("host_id", currentUser.id));
+      }
+      const results = await Promise.all(tasks);
+      for (const result of results) {
+        if (result.error) throw result.error;
+      }
+      await refreshOpponentPresence();
+      await refreshRooms();
+    } catch (error) {
+      console.error("Could not refresh online presence and invitations.", error);
+      setAccountStatus("Could not refresh your online status or invitations. Check your connection.", "error");
+    }
+  }, 20000);
+}
+
+async function refreshOpponentPresence() {
+  if (!activeRoomId || !activeRoomOpponentId || !supabaseClient) return;
+  const [{ data: opponent, error: playerError }, { data: room, error: roomError }] = await Promise.all([
+    supabaseClient.from("profiles").select("last_seen_at").eq("id", activeRoomOpponentId).maybeSingle(),
+    supabaseClient.from("game_rooms").select("updated_at,status").eq("id", activeRoomId).maybeSingle()
+  ]);
+  if (playerError) throw playerError;
+  if (roomError) throw roomError;
+  const online = Boolean(opponent && room && room.status !== "closed" &&
+    Date.now() - Date.parse(opponent.last_seen_at) < 90000 &&
+    Date.now() - Date.parse(room.updated_at) < 90000);
+  if (online !== opponentIsOnline) {
+    opponentIsOnline = online;
+    render();
+  }
+}
+
+async function activateAccount(user, requestedUsername = null) {
+  currentUser = user;
+  const { data: existing, error: profileError } = await supabaseClient.from("profiles")
+    .select("id,username,last_seen_at")
+    .eq("id", user.id)
+    .maybeSingle();
+  if (profileError) throw profileError;
+  if (existing) {
+    accountProfile = existing;
+  } else {
+    const username = requestedUsername || normalizeUsername(user.email.split("@")[0]);
+    if (!username) throw new Error("The profile name could not be loaded. Contact the site owner.");
+    const { data: created, error: createError } = await supabaseClient.from("profiles")
+      .insert({ id: user.id, username })
+      .select("id,username,last_seen_at")
+      .single();
+    if (createError) throw createError;
+    accountProfile = created;
+  }
+  document.querySelector("#account-form").hidden = true;
+  document.querySelector("#account-dashboard").hidden = false;
+  document.querySelector("#account-username").value = accountProfile.username;
+  document.querySelector("#account-password").value = "";
+  document.querySelector("#signed-in-name").textContent = accountProfile.username;
+  document.querySelector("#white-player-name").value = accountProfile.username;
+  document.querySelector("#black-player-name").value = accountProfile.username;
+  const { error: presenceError } = await supabaseClient.rpc("touch_profile");
+  if (presenceError) throw presenceError;
+  startRoomHeartbeat();
+  await refreshRooms();
+  if (directoryTimer) window.clearInterval(directoryTimer);
+  directoryTimer = window.setInterval(() => {
+    void refreshRooms().catch(error => {
+      console.error("Could not refresh the player list.", error);
+      setAccountStatus("Could not refresh players and invitations. Check your connection.", "error");
+    });
+  }, 15000);
+  setAccountStatus(`You are signed in as ${accountProfile.username}.`, "connected");
+}
+
+async function initializeProfiles() {
+  const config = window.RIFT_CHESS_CONFIG;
+  if (!config || !config.supabaseUrl || !config.supabaseAnonKey ||
+      typeof window.supabase?.createClient !== "function") {
+    document.querySelector("#account-form").hidden = true;
+    setAccountStatus("Shared accounts are not configured yet. Follow SUPABASE_SETUP.md to connect the player service.", "error");
+    return;
+  }
+  supabaseClient = window.supabase.createClient(config.supabaseUrl, config.supabaseAnonKey);
+  const { data, error } = await supabaseClient.auth.getSession();
+  if (error) {
+    setAccountStatus("Could not restore your profile session. Please reload and try again.", "error");
+    return;
+  }
+  if (data.session) {
+    try {
+      await activateAccount(data.session.user);
+    } catch (profileError) {
+      console.error("Could not load the player profile.", profileError);
+      setAccountStatus(profileError.message || "Could not load your profile. Check the Supabase setup.", "error");
+    }
+  } else {
+    setAccountMode("login");
+    setAccountStatus("Log in or create a player profile to see online players.", "waiting");
+  }
+}
+
+document.querySelector("#account-mode-button").addEventListener("click", () => {
+  const form = document.querySelector("#account-form");
+  setAccountMode(form.dataset.mode === "signup" ? "login" : "signup");
+});
+
+document.querySelector("#account-form").addEventListener("submit", async event => {
+  event.preventDefault();
+  if (!supabaseClient) return;
+  const username = normalizeUsername(document.querySelector("#account-username").value);
+  const password = document.querySelector("#account-password").value;
+  if (!username) {
+    setAccountStatus("Use 3–20 letters, numbers, or underscores for your player name.", "error");
+    return;
+  }
+  if (password.length < 8) {
+    setAccountStatus("Choose a password with at least 8 characters.", "error");
+    return;
+  }
+  const signup = event.currentTarget.dataset.mode === "signup";
+  setAccountStatus(signup ? "Creating your profile…" : "Logging in…", "waiting");
+  let result;
+  try {
+    result = signup
+      ? await supabaseClient.auth.signUp({ email: usernameEmail(username), password })
+      : await supabaseClient.auth.signInWithPassword({ email: usernameEmail(username), password });
+  } catch (error) {
+    console.error("Authentication request failed.", error);
+    setAccountStatus("Could not reach the profile service. Check your internet connection and try again.", "error");
+    return;
+  }
+  if (result.error) {
+    setAccountStatus(signup
+      ? "Could not create that profile. The name may already be taken, or Supabase authentication needs checking."
+      : "Login failed. Check your player name and password.", "error");
+    return;
+  }
+  if (!result.data.session) {
+    setAccountStatus("Supabase requires email confirmation. Disable email confirmations in the project settings and try again.", "error");
+    return;
+  }
+  try {
+    await activateAccount(result.data.user, username);
+  } catch (error) {
+    console.error("Could not finish setting up the player profile.", error);
+    setAccountStatus(error.message || "Could not finish setting up your profile. Check the Supabase SQL setup.", "error");
+  }
+});
+
+document.querySelector("#logout-button").addEventListener("click", async () => {
+  stopOnlineRoom();
+  if (roomHeartbeatTimer) window.clearInterval(roomHeartbeatTimer);
+  roomHeartbeatTimer = null;
+  if (directoryTimer) window.clearInterval(directoryTimer);
+  directoryTimer = null;
+  let presenceError = null;
+  try {
+    const result = await supabaseClient.rpc("mark_profile_offline");
+    presenceError = result.error;
+  } catch (error) {
+    presenceError = error;
+  }
+  let signOutError = null;
+  try {
+    const result = await supabaseClient.auth.signOut();
+    signOutError = result.error;
+  } catch (error) {
+    signOutError = error;
+  }
+  if (signOutError) {
+    console.error("Could not sign out.", signOutError);
+    setAccountStatus("Could not log out. Please try again.", "error");
+    return;
+  }
+  currentUser = null;
+  accountProfile = null;
+  gameMode = "local";
+  playerColor = "w";
+  gameStarted = false;
+  document.querySelector("#white-player-name").value = "White";
+  document.querySelector("#black-player-name").value = "Black";
+  lobby = { w: readProfile("w"), b: readProfile("b") };
+  state = freshState({ w: lobby.w.options, b: lobby.b.options }, currentPlayers());
+  document.querySelector("#setup-card").hidden = false;
+  document.querySelector("#account-dashboard").hidden = true;
+  document.querySelector("#account-form").hidden = false;
+  if (presenceError) console.error("Could not mark the profile offline.", presenceError);
+  setAccountStatus(presenceError
+    ? "You are logged out. Your profile may show online for up to 90 seconds."
+    : "You are logged out.", "waiting");
+  renderPlayerDirectory([]);
+  document.querySelector("#incoming-rooms").innerHTML = '<p class="empty-rifts">No room invitations.</p>';
+  render();
+});
+
+document.querySelector("#player-directory").addEventListener("click", event => {
+  const button = event.target.closest(".directory-invite");
+  if (!button || button.disabled) return;
+  document.querySelector("#challenge-username").value = button.dataset.username;
+  void createNamedRoom().catch(error => {
+    console.error("Could not create the private room.", error);
+    setRoomStatus("Could not create this room. Please try again.", "error");
+  });
+});
+
+document.querySelector("#incoming-rooms").addEventListener("click", event => {
+  const button = event.target.closest(".join-room-button");
+  if (button) void joinNamedRoom(button.dataset.roomId).catch(error => {
+    console.error("Could not join the private room.", error);
+    setRoomStatus("Could not join this room. Ask the host to try again.", "error");
+  });
+});
+
+document.querySelector("#challenge-username").addEventListener("keydown", event => {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    void createNamedRoom().catch(error => {
+      console.error("Could not create the private room.", error);
+      setRoomStatus("Could not create this room. Please try again.", "error");
+    });
+  }
+});
+
+window.addEventListener("beforeunload", () => {
+  if (activeRoomId && gameMode === "host" && supabaseClient && currentUser) {
+    void supabaseClient.rpc("close_game_room", { p_room_id: activeRoomId });
+  } else if (activeRoomId && gameMode === "guest" && supabaseClient && currentUser) {
+    void supabaseClient.rpc("leave_game_room", { p_room_id: activeRoomId });
+  }
+});
+
 function isHostedSecurely() {
   return window.location.protocol === "https:" ||
     (window.location.protocol === "http:" &&
       ["localhost", "127.0.0.1", "::1"].includes(window.location.hostname));
-}
-
-function createRoomToken() {
-  const bytes = new Uint8Array(16);
-  window.crypto.getRandomValues(bytes);
-  return Array.from(bytes, byte => byte.toString(16).padStart(2, "0")).join("");
 }
 
 function roomSnapshot() {
@@ -864,16 +1184,123 @@ function validRemoteState(remoteState) {
       (remoteState.lastMove && validSquare(remoteState.lastMove.from) && validSquare(remoteState.lastMove.to)));
 }
 
-function receiveRoomData(connection, message) {
+class RoomTransport {
+  constructor(roomId, cursor = 0) {
+    this.roomId = roomId;
+    this.cursor = Number(cursor) || 0;
+    this.open = true;
+    this.closed = false;
+    this.polling = false;
+    this.lastErrorAt = 0;
+    this.listeners = new Map();
+    this.sendQueue = Promise.resolve();
+    this.pollTimer = window.setInterval(() => {
+      void this.poll();
+    }, 750);
+    queueMicrotask(() => this.emit("open"));
+  }
+
+  on(event, listener) {
+    const listeners = this.listeners.get(event) || [];
+    listeners.push(listener);
+    this.listeners.set(event, listeners);
+    return this;
+  }
+
+  emit(event, ...args) {
+    for (const listener of this.listeners.get(event) || []) listener(...args);
+  }
+
+  send(payload) {
+    this.sendQueue = this.sendQueue.then(async () => {
+      if (this.closed) return;
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        const { error } = await supabaseClient.rpc("send_room_message", {
+          p_room_id: this.roomId,
+          p_payload: payload
+        });
+        if (!error) return;
+        if (attempt === 2) throw error;
+        await new Promise(resolve => window.setTimeout(resolve, 500 * (attempt + 1)));
+      }
+    }).catch(error => {
+      console.error("Could not send a room message.", error);
+      this.emit("error", error);
+    });
+  }
+
+  async poll() {
+    if (this.closed || this.polling || !currentUser) return;
+    this.polling = true;
+    try {
+      const { data: messages, error } = await supabaseClient.from("game_messages")
+        .select("sequence,sender_id,payload")
+        .eq("room_id", this.roomId)
+        .gt("sequence", this.cursor)
+        .order("sequence", { ascending: true })
+        .limit(100);
+      if (error) throw error;
+      const recovered = this.lastErrorAt > 0;
+      this.lastErrorAt = 0;
+      if (recovered) this.emit("reconnected");
+      for (const message of messages || []) {
+        this.cursor = Number(message.sequence);
+        for (const listener of this.listeners.get("data") || []) {
+          await listener(message.payload, message.sender_id);
+        }
+      }
+    } catch (error) {
+      if (Date.now() - this.lastErrorAt > 5000) {
+        this.lastErrorAt = Date.now();
+        console.error("Could not synchronize the room.", error);
+        this.emit("error", error);
+      }
+    } finally {
+      this.polling = false;
+    }
+  }
+
+  close() {
+    if (this.closed) return;
+    this.closed = true;
+    this.open = false;
+    window.clearInterval(this.pollTimer);
+    this.emit("close");
+  }
+}
+
+async function receiveRoomData(connection, message, senderId) {
   if (!message || typeof message !== "object") return;
   if (gameMode === "host") {
     if (!connection.roomAuthenticated) {
-      if (message.type !== "join" || message.token !== roomToken || !validProfile(message.profile)) {
-        connection.close();
+      if (message.type !== "join" || message.roomId !== activeRoomId ||
+          typeof message.userId !== "string" || message.userId !== senderId ||
+          !validProfile(message.profile)) {
+        return;
+      }
+      const { data: room, error } = await supabaseClient.from("game_rooms")
+        .select("invitee_id,guest_id,status")
+        .eq("id", activeRoomId)
+        .eq("host_id", currentUser.id)
+        .maybeSingle();
+      if (error || !room || room.invitee_id !== message.userId ||
+          room.guest_id !== message.userId || !["connecting", "playing"].includes(room.status)) {
+        if (error) setRoomStatus("Could not verify the room invitation. Retrying sync…", "error");
+        return;
+      }
+      const { data: invitedPlayer, error: playerError } = await supabaseClient.from("profiles")
+        .select("username")
+        .eq("id", message.userId)
+        .maybeSingle();
+      if (playerError || !invitedPlayer || invitedPlayer.username !== message.profile.name) {
+        if (playerError) setRoomStatus("Could not verify the player profile. Retrying sync…", "error");
         return;
       }
       connection.roomAuthenticated = true;
-      lobby.b = { ...message.profile, ready: false, name: message.profile.name.trim() };
+      connection.remoteUserId = message.userId;
+      activeRoomOpponentId = message.userId;
+      opponentIsOnline = true;
+      lobby.b = { ...message.profile, ready: false, name: invitedPlayer.username };
       setProfileInputs("b", lobby.b);
       setRoomStatus(`${lobby.b.name} joined as Black. Both players need to ready up.`, "connected");
       render();
@@ -884,7 +1311,14 @@ function receiveRoomData(connection, message) {
       }
       return;
     }
-    if (message.type === "setup" && message.player === "b" && validProfile(message.profile) && !gameStarted) {
+    if (senderId !== connection.remoteUserId) return;
+    if (message.type === "join") {
+      if (gameStarted) connection.send({ type: "start", state: roomSnapshot() });
+      else sendLobby();
+      return;
+    }
+    if (message.type === "setup" && message.player === "b" && validProfile(message.profile) &&
+        message.profile.name === lobby.b.name && !gameStarted) {
       if (lobby.b.ready && !message.profile.ready) return;
       lobby.b = { ...message.profile, name: message.profile.name.trim() };
       setProfileInputs("b", lobby.b);
@@ -913,8 +1347,13 @@ function receiveRoomData(connection, message) {
     return;
   }
 
+  if (gameMode === "guest" && senderId !== connection.remoteUserId) return;
   if (gameMode === "guest" && message.type === "lobby" && !gameStarted &&
       message.players && validProfile(message.players.w) && validProfile(message.players.b)) {
+    connection.roomAuthenticated = true;
+    opponentIsOnline = true;
+    if (joinRetryTimer) window.clearInterval(joinRetryTimer);
+    joinRetryTimer = null;
     lobby.w = { ...message.players.w };
     if (!lobby.b.ready) lobby.b = { ...message.players.b, ready: false };
     setProfileInputs("w", lobby.w);
@@ -925,18 +1364,22 @@ function receiveRoomData(connection, message) {
 
   if (gameMode === "guest" && message.type === "start" && validRemoteState(message.state) &&
       (!state || message.state.history.length >= state.history.length)) {
+    connection.roomAuthenticated = true;
+    opponentIsOnline = true;
+    if (joinRetryTimer) window.clearInterval(joinRetryTimer);
+    joinRetryTimer = null;
     state = {
       ...message.state,
       selected: null,
       legalMoves: []
     };
     gameStarted = true;
+    document.querySelector("#setup-card").hidden = true;
     lobby.w = { ...lobby.w, name: state.players.w.name, ready: true };
     lobby.b = { ...lobby.b, name: state.players.b.name, ready: true };
     remoteMovePending = false;
     updateGameStatus();
     render();
-    document.querySelector("#create-room-button").textContent = "Joined as Black";
     setRoomStatus(`Game started. You are Black; White is ${state.players.w.name}.`, "connected");
     return;
   }
@@ -959,163 +1402,216 @@ function receiveRoomData(connection, message) {
 function watchConnection(connection, role) {
   connection.on("open", () => {
     if (role === "guest") {
-      connection.send({ type: "join", token: roomToken, profile: readProfile("b") });
-      setRoomStatus("Room found. Connecting to the host...", "waiting");
+      const sendJoin = () => connection.send({
+        type: "join",
+        roomId: activeRoomId,
+        userId: currentUser.id,
+        profile: readProfile("b")
+      });
+      sendJoin();
+      if (joinRetryTimer) window.clearInterval(joinRetryTimer);
+      joinRetryTimer = window.setInterval(() => {
+        if (connection.roomAuthenticated || connection !== dataConnection || gameMode !== "guest") {
+          window.clearInterval(joinRetryTimer);
+          joinRetryTimer = null;
+          return;
+        }
+        sendJoin();
+      }, 3000);
+      setRoomStatus("Room found. Checking your invitation...", "waiting");
     }
     if (role === "host" && connection.roomAuthenticated) sendRoomState();
+    render();
   });
-  connection.on("data", message => receiveRoomData(connection, message));
+  connection.on("data", (message, senderId) => {
+    return receiveRoomData(connection, message, senderId).catch(error => {
+      console.error("Could not process room message.", error);
+      setRoomStatus("There was a problem checking the room invitation.", "error");
+    });
+  });
   connection.on("close", () => {
+    if (joinRetryTimer) window.clearInterval(joinRetryTimer);
+    joinRetryTimer = null;
     if (dataConnection === connection) dataConnection = null;
     if ((role === "host" && gameMode !== "host") || (role === "guest" && gameMode !== "guest")) return;
     if (role === "host") {
+      if (activeRoomId) {
+        void supabaseClient.from("game_rooms")
+          .update({ guest_id: null, status: "waiting", updated_at: new Date().toISOString() })
+          .eq("id", activeRoomId)
+          .eq("host_id", currentUser.id);
+      }
       if (!gameStarted) {
         lobby.b = defaultProfile("Black");
         setProfileInputs("b", lobby.b);
         render();
       }
       setRoomStatus(connection.roomAuthenticated
-        ? `${lobby.b.name} disconnected. The invite link can be used to rejoin.`
-        : "Waiting for your friend to join.", "waiting");
+        ? `${lobby.b.name} disconnected. They can rejoin from their account.`
+        : "Waiting for the invited player to join.", "waiting");
     } else {
       remoteMovePending = false;
-      setRoomStatus("Connection to the host was lost. Reopen the invite link to rejoin.", "error");
+      if (activeRoomId) void supabaseClient.rpc("leave_game_room", { p_room_id: activeRoomId });
+      setRoomStatus("Connection to the host was lost. Ask them to reopen the room.", "error");
       render();
     }
   });
   connection.on("error", () => {
-    setRoomStatus("The peer connection failed. Check both players' internet connections and try again.", "error");
+    if (role === "guest") {
+      remoteMovePending = false;
+      render();
+    }
+    setRoomStatus("Room sync was interrupted. The game will retry; check your internet connection.", "error");
+  });
+  connection.on("reconnected", () => {
+    setRoomStatus("Room connection restored.", "connected");
   });
 }
 
-function createOnlineRoom() {
+async function createNamedRoom() {
+  const requestedName = document.querySelector("#challenge-username").value.trim();
+  const normalizedName = normalizeUsername(requestedName);
+  if (!normalizedName || !currentUser || !accountProfile) {
+    setRoomStatus("Log in and enter the exact username of the player you want to invite.", "error");
+    return;
+  }
+  if (normalizedName === accountProfile.username.toLowerCase()) {
+    setRoomStatus("Choose another player; you cannot invite your own profile.", "error");
+    return;
+  }
   if (!isHostedSecurely()) {
-    setRoomStatus("To invite someone, publish this game on an HTTPS website first. A file:// link only works on your own computer.", "error");
+    setRoomStatus("Online play requires the published HTTPS website.", "error");
     return;
   }
-  if (typeof Peer !== "function") {
-    setRoomStatus("The online connection library did not load. Check your internet connection and reload the page.", "error");
+  const { data: invitee, error: playerError } = await supabaseClient.from("profiles")
+    .select("id,username,last_seen_at")
+    .ilike("username", normalizedName)
+    .maybeSingle();
+  if (playerError) {
+    setRoomStatus("Could not find that player. Please try again.", "error");
     return;
   }
+  if (!invitee) {
+    setRoomStatus("No profile has that username. Check the spelling and try again.", "error");
+    return;
+  }
+  if (Date.now() - Date.parse(invitee.last_seen_at) > 90000) {
+    setRoomStatus(`${invitee.username} is offline. Ask them to log in before creating a room.`, "error");
+    return;
+  }
+
   stopOnlineRoom();
   gameMode = "host";
   playerColor = "w";
-  roomToken = createRoomToken();
-  lobby = { w: readProfile("w"), b: defaultProfile("Black") };
+  lobby = {
+    w: { ...readProfile("w"), name: accountProfile.username },
+    b: defaultProfile(invitee.username)
+  };
+  document.querySelector("#white-player-name").value = accountProfile.username;
+  setProfileInputs("b", lobby.b);
   state = freshState({ w: lobby.w.options, b: lobby.b.options }, currentPlayers());
   gameStarted = false;
   document.querySelector("#setup-card").hidden = false;
-  document.querySelector("#create-room-button").disabled = true;
-  document.querySelector("#create-room-button").textContent = "Creating room...";
   render();
   renderLobby();
-  setRoomStatus("Connecting to the room service...", "waiting");
-
-  peer = new Peer();
-  peer.on("open", id => {
-    const invite = new URL(window.location.href);
-    invite.searchParams.set("room", id);
-    invite.hash = roomToken;
-    inviteLinkInput.value = invite.href;
-    inviteLinkRow.hidden = false;
-    document.querySelector("#create-room-button").textContent = "Room created";
-    setRoomStatus(`${lobby.w.name}, your invite is ready. Lock in your setup and wait for your friend.`, "waiting");
-  });
-  peer.on("connection", connection => {
-    if (dataConnection) {
-      connection.close();
-      return;
-    }
-    dataConnection = connection;
-    connection.roomAuthenticated = false;
-    watchConnection(connection, "host");
-  });
-  peer.on("disconnected", () => {
-    setRoomStatus("Room service disconnected. Trying to reconnect...", "waiting");
-    if (peer && !peer.destroyed) peer.reconnect();
-  });
-  peer.on("error", error => {
-    const detail = error && error.type === "peer-unavailable"
-      ? "That room is no longer available. Ask the host for a new invite."
-      : "Could not create or connect to the room. Check the internet connection and try again.";
-    setRoomStatus(detail, "error");
-    document.querySelector("#create-room-button").disabled = false;
-    document.querySelector("#create-room-button").textContent = "Try again";
-  });
+  setRoomStatus(`Creating a private room for ${invitee.username}…`, "waiting");
+  const { data: room, error: roomError } = await supabaseClient.from("game_rooms")
+    .insert({
+      host_id: currentUser.id,
+      invitee_id: invitee.id,
+      host_name: accountProfile.username,
+      invited_name: invitee.username
+    })
+    .select("id")
+    .single();
+  if (roomError) {
+    gameMode = "local";
+    playerColor = "w";
+    lobby = { w: readProfile("w"), b: readProfile("b") };
+    state = freshState({ w: lobby.w.options, b: lobby.b.options }, currentPlayers());
+    render();
+    setRoomStatus("Could not save this room invitation. Please try again.", "error");
+    return;
+  }
+  activeRoomId = room.id;
+  activeRoomOpponentId = invitee.id;
+  opponentIsOnline = false;
+  dataConnection = new RoomTransport(room.id);
+  watchConnection(dataConnection, "host");
+  startRoomHeartbeat();
+  setRoomStatus(`Private room ready for ${invitee.username}. Set your pieces and wait for them to join.`, "waiting");
+  try {
+    await refreshRooms();
+  } catch (error) {
+    console.error("Could not refresh the player list after creating a room.", error);
+    setRoomStatus("Room created, but the player list did not refresh. Your opponent may need to reload.", "error");
+  }
 }
 
-function joinOnlineRoom(roomId, token) {
-  if (!isHostedSecurely()) {
-    setRoomStatus("This invite needs to be opened from the game's HTTPS website, not from a file on someone's computer.", "error");
+async function joinNamedRoom(roomId) {
+  if (!isHostedSecurely() || !currentUser) {
+    setRoomStatus("Log in on the published HTTPS website before joining a room.", "error");
     return;
   }
-  if (!/^[A-Za-z0-9_-]{1,128}$/.test(roomId) || !/^[a-f0-9]{32}$/.test(token)) {
-    setRoomStatus("This invite link is incomplete or invalid. Ask the host to create a fresh invite.", "error");
+  stopOnlineRoom();
+  const { data: joinResult, error: joinError } = await supabaseClient.rpc("join_game_room", { p_room_id: roomId });
+  const room = joinResult && joinResult.room;
+  if (joinError || !room) {
+    setRoomStatus(joinError ? joinError.message : "The host is no longer available.", "error");
+    await refreshRooms();
     return;
   }
-  if (typeof Peer !== "function") {
-    setRoomStatus("The online connection library did not load. Check your internet connection and reload the page.", "error");
-    return;
-  }
+  activeRoomId = room.id;
+  activeRoomOpponentId = room.host_id;
+  opponentIsOnline = false;
   gameMode = "guest";
   playerColor = "b";
-  roomToken = token;
   remoteMovePending = false;
   gameStarted = false;
   lobby = {
-    w: defaultProfile("White"),
+    w: defaultProfile(room.host_name),
     b: readProfile("b")
   };
+  lobby.b.name = accountProfile.username;
+  document.querySelector("#black-player-name").value = accountProfile.username;
   state = freshState({ w: lobby.w.options, b: lobby.b.options }, currentPlayers());
   document.querySelector("#setup-card").hidden = false;
-  document.querySelector("#create-room-button").disabled = true;
-  document.querySelector("#create-room-button").textContent = "Joining room...";
   render();
   renderLobby();
-  setRoomStatus("Finding the host's room...", "waiting");
-  peer = new Peer();
-  peer.on("open", () => {
-    dataConnection = peer.connect(roomId, { reliable: true, serialization: "json" });
-    watchConnection(dataConnection, "guest");
-  });
-  peer.on("error", error => {
-    const detail = error && error.type === "peer-unavailable"
-      ? "That room could not be found. Check the link or ask the host to create another."
-      : "Could not connect to the room service. Check the internet connection and try again.";
-    setRoomStatus(detail, "error");
-    document.querySelector("#create-room-button").textContent = "Room unavailable";
-  });
+  setRoomStatus(`Joining ${room.host_name}…`, "waiting");
+  dataConnection = new RoomTransport(room.id, joinResult.cursor);
+  dataConnection.remoteUserId = room.host_id;
+  watchConnection(dataConnection, "guest");
 }
 
 function stopOnlineRoom() {
   const connection = dataConnection;
+  const oldRoomId = activeRoomId;
+  const oldMode = gameMode;
+  if (joinRetryTimer) window.clearInterval(joinRetryTimer);
+  joinRetryTimer = null;
   dataConnection = null;
-  if (connection) connection.close();
-  if (peer) peer.destroy();
-  peer = null;
-  roomToken = null;
+  activeRoomId = null;
+  gameMode = "local";
+  playerColor = "w";
   remoteMovePending = false;
-  const url = new URL(window.location.href);
-  if (url.searchParams.has("room")) {
-    url.searchParams.delete("room");
-    url.hash = "";
-    window.history.replaceState({}, "", url);
+  if (connection) connection.close();
+  if (oldRoomId && supabaseClient && currentUser) {
+    if (oldMode === "host") {
+      void supabaseClient.rpc("close_game_room", { p_room_id: oldRoomId });
+    } else if (oldMode === "guest") {
+      void supabaseClient.rpc("leave_game_room", { p_room_id: oldRoomId });
+    }
   }
+  activeRoomOpponentId = null;
+  opponentIsOnline = false;
 }
 
-document.querySelector("#create-room-button").addEventListener("click", createOnlineRoom);
-document.querySelector("#copy-invite-button").addEventListener("click", async () => {
-  inviteLinkInput.focus();
-  inviteLinkInput.select();
-  try {
-    await navigator.clipboard.writeText(inviteLinkInput.value);
-    setRoomStatus("Invite link copied. Send it to your friend.", "connected");
-  } catch {
-    const copied = document.execCommand("copy");
-    setRoomStatus(copied
-      ? "Invite link copied. Send it to your friend."
-      : "Select and copy the invite link above to share it.", copied ? "connected" : "waiting");
-  }
+document.querySelector("#create-room-button").addEventListener("click", () => {
+  void createNamedRoom().catch(error => {
+    console.error("Could not create the private room.", error);
+    setRoomStatus("Could not create this room. Please try again.", "error");
+  });
 });
 
 for (const color of ["w", "b"]) {
@@ -1125,5 +1621,10 @@ lobby = { w: readProfile("w"), b: readProfile("b") };
 state = freshState({ w: lobby.w.options, b: lobby.b.options }, currentPlayers());
 render();
 const invite = new URL(window.location.href);
-const roomToJoin = invite.searchParams.get("room");
-if (roomToJoin) joinOnlineRoom(roomToJoin, invite.hash.slice(1));
+if (invite.searchParams.has("room")) {
+  setRoomStatus("Room links from the older version are no longer supported. Log in and ask the host to invite your profile.", "error");
+}
+void initializeProfiles().catch(error => {
+  console.error("Could not initialize player profiles.", error);
+  setRoomStatus("Could not connect to the player service. Check the Supabase setup and reload.", "error");
+});
