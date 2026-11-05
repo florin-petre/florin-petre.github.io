@@ -37,6 +37,7 @@ let accountProfile = null;
 let activeRoomId = null;
 let activeRoomOpponentId = null;
 let opponentIsOnline = false;
+let botTurnTimer = null;
 let directoryTimer = null;
 let roomPollTimer = null;
 let roomHeartbeatTimer = null;
@@ -321,18 +322,18 @@ function allLegalMoves(game, color) {
   return moves;
 }
 
-function updateCastlingRights(piece, from, captured, to) {
+function updateCastlingRights(castling, piece, from, captured, to) {
   if (piece.type === "K") {
-    state.castling[piece.color].king = false;
-    state.castling[piece.color].queen = false;
+    castling[piece.color].king = false;
+    castling[piece.color].queen = false;
   }
   if (piece.type === "R" && from.row === (piece.color === "w" ? 7 : 0)) {
-    if (from.col === 8) state.castling[piece.color].king = false;
-    if (from.col === 1) state.castling[piece.color].queen = false;
+    if (from.col === 8) castling[piece.color].king = false;
+    if (from.col === 1) castling[piece.color].queen = false;
   }
   if (captured && captured.type === "R" && to.row === (captured.color === "w" ? 7 : 0)) {
-    if (to.col === 8) state.castling[captured.color].king = false;
-    if (to.col === 1) state.castling[captured.color].queen = false;
+    if (to.col === 8) castling[captured.color].king = false;
+    if (to.col === 1) castling[captured.color].queen = false;
   }
 }
 
@@ -364,7 +365,7 @@ function commitMove(from, move, promotion = "Q") {
     !state.board[move.row][move.col] ? { row: from.row, col: move.col } : move;
   const captured = state.board[capturedAt.row][capturedAt.col];
   const result = applyMove(state, from, move, promotion);
-  updateCastlingRights(movingPiece, from, captured, move);
+  updateCastlingRights(state.castling, movingPiece, from, captured, move);
   state.board = result.board;
   if (captured) state.captured[piece.color].push(captured);
   state.enPassant = piece.type === "P" && Math.abs(move.row - from.row) === 2
@@ -378,6 +379,11 @@ function commitMove(from, move, promotion = "Q") {
   updateGameStatus();
   render();
   if (gameMode === "host") sendRoomState();
+  if (gameMode === "bot") {
+    if (state.gameOver) setRoomStatus("Game over.", "connected");
+    else if (state.turn !== playerColor) scheduleBotMove();
+    else setRoomStatus("Your turn.", "connected");
+  }
 }
 
 function updateGameStatus() {
@@ -478,7 +484,9 @@ function renderBoard() {
 function handleSquareClick(row, col) {
   if (!gameStarted || !state || state.gameOver || pendingPromotion) return;
   const clickedPiece = state.board[row][col];
-  const controlledColor = gameMode === "host" ? "w" : gameMode === "guest" ? "b" : state.turn;
+  const controlledColor = gameMode === "host" ? "w" :
+    gameMode === "guest" ? "b" :
+      gameMode === "bot" ? playerColor : state.turn;
   if (state.selected) {
     const move = state.legalMoves.find(candidate => candidate.row === row && candidate.col === col);
     if (move) {
@@ -548,7 +556,7 @@ function renderPlayerStrips() {
     indicator.classList.toggle("is-active", isCurrentTurn && isMyColor);
     if (gameStarted && !state.gameOver) {
       indicator.textContent = isCurrentTurn
-        ? (isMyColor ? "YOUR TURN" : "THEIR TURN")
+      ? (isMyColor ? "YOUR TURN" : gameMode === "bot" ? "BOT THINKING" : "THEIR TURN")
         : "WAITING";
     } else if (lobby) {
       const opponentConnected = gameMode === "local" ||
@@ -569,7 +577,9 @@ function renderPlayerStrips() {
   }
   document.querySelector("#game-mode-label").innerHTML = gameMode === "local"
     ? "LOCAL TWO-PLAYER <span>·</span> PASS &amp; PLAY"
-    : `ONLINE ROOM <span>·</span> PLAYING ${playerColor === "w" ? "WHITE" : "BLACK"}`;
+    : gameMode === "bot"
+      ? `VS RIFT BOT <span>·</span> ${document.querySelector("#bot-difficulty").value.toUpperCase()}`
+      : `ONLINE ROOM <span>·</span> PLAYING ${playerColor === "w" ? "WHITE" : "BLACK"}`;
 }
 
 function render() {
@@ -749,6 +759,173 @@ function beginPreparedGame() {
   }
 }
 
+function startBotGame() {
+  const start = async () => {
+    if (activeRoomId) await stopOnlineRoom();
+    if (botTurnTimer) window.clearTimeout(botTurnTimer);
+    botTurnTimer = null;
+    gameMode = "bot";
+    playerColor = document.querySelector("#human-color").value;
+    const botColor = opposite(playerColor);
+    const humanProfile = readProfile(playerColor);
+    const botProfile = readProfile(botColor);
+    humanProfile.name = getPlayerName(playerColor) || "You";
+    botProfile.name = "Rift Bot";
+    humanProfile.ready = true;
+    botProfile.ready = true;
+    lobby = { w: playerColor === "w" ? humanProfile : botProfile,
+      b: playerColor === "b" ? humanProfile : botProfile };
+    state = freshState({ w: lobby.w.options, b: lobby.b.options }, currentPlayers());
+    gameStarted = true;
+    document.querySelector("#setup-card").hidden = true;
+    pendingPromotion = null;
+    updateGameStatus();
+    render();
+    const difficulty = document.querySelector("#bot-difficulty").value;
+    setRoomStatus(`Game started. You are ${playerColor === "w" ? "White" : "Black"}; ${difficulty} Rift Bot is ready.`, "connected");
+    if (state.turn === botColor) scheduleBotMove();
+  };
+  void start().catch(error => {
+    console.error("Could not start a game against the bot.", error);
+    setRoomStatus("Could not start the bot game. Please try again.", "error");
+  });
+}
+
+const BOT_PIECE_VALUES = { P: 100, N: 320, B: 335, R: 500, Q: 900, K: 0 };
+
+function simulateBotMove(position, move) {
+  const piece = position.board[move.from.row][move.from.col];
+  const capturedSquare = piece.type === "P" && position.enPassant &&
+    move.row === position.enPassant.row && move.col === position.enPassant.col &&
+    !position.board[move.row][move.col]
+    ? { row: move.from.row, col: move.col }
+    : move;
+  const captured = position.board[capturedSquare.row][capturedSquare.col];
+  const result = applyMove(position, move.from, move);
+  const castling = {
+    w: { ...position.castling.w },
+    b: { ...position.castling.b }
+  };
+  updateCastlingRights(castling, piece, move.from, captured, move);
+  const enPassant = piece.type === "P" && Math.abs(move.row - move.from.row) === 2
+    ? { row: (move.row + move.from.row) / 2, col: move.col }
+    : null;
+  return {
+    ...position,
+    board: result.board,
+    turn: opposite(position.turn),
+    castling,
+    enPassant,
+    selected: null,
+    legalMoves: []
+  };
+}
+
+function evaluateBotPosition(position) {
+  let score = 0;
+  for (let row = 0; row < 8; row += 1) {
+    for (let col = 0; col < 10; col += 1) {
+      const piece = position.board[row][col];
+      if (!piece) continue;
+      const sign = piece.color === "w" ? 1 : -1;
+      const centerBonus = 7 - (Math.abs(3.5 - row) + Math.abs(4.5 - col));
+      const advance = piece.color === "w" ? 6 - row : row - 1;
+      score += sign * BOT_PIECE_VALUES[piece.type];
+      score += sign * centerBonus * (piece.type === "P" ? 2 : 1.5);
+      if (piece.type === "P") score += sign * advance * 3;
+      if (piece.rift && piece.moves >= 2) score += sign * 12;
+    }
+  }
+  return score;
+}
+
+function orderBotMoves(position, moves) {
+  return moves.sort((a, b) => botMoveOrder(position, b) - botMoveOrder(position, a));
+}
+
+function botMoveOrder(position, move) {
+  const piece = position.board[move.from.row][move.from.col];
+  let target = position.board[move.row][move.col];
+  if (!target && piece.type === "P" && position.enPassant &&
+      move.row === position.enPassant.row && move.col === position.enPassant.col) {
+    target = position.board[move.from.row][move.col];
+  }
+  const promotion = piece.type === "P" && (move.row === 0 || move.row === 7) ? 800 : 0;
+  return (target ? BOT_PIECE_VALUES[target.type] * 10 - BOT_PIECE_VALUES[piece.type] : 0) +
+    promotion + (move.castle ? 20 : 0);
+}
+
+function searchBotPosition(position, depth, alpha, beta, ply) {
+  if (depth === 0) return evaluateBotPosition(position);
+  const moves = orderBotMoves(position, allLegalMoves(position, position.turn));
+  if (!moves.length) {
+    if (!isInCheck(position.board, position.turn)) return 0;
+    return position.turn === "w" ? -100000 + ply : 100000 - ply;
+  }
+  const maximizing = position.turn === "w";
+  let best = maximizing ? -Infinity : Infinity;
+  for (const move of moves) {
+    const score = searchBotPosition(simulateBotMove(position, move), depth - 1,
+      alpha, beta, ply + 1);
+    if (maximizing) {
+      best = Math.max(best, score);
+      alpha = Math.max(alpha, best);
+    } else {
+      best = Math.min(best, score);
+      beta = Math.min(beta, best);
+    }
+    if (beta <= alpha) break;
+  }
+  return best;
+}
+
+function chooseBotMove() {
+  const botColor = opposite(playerColor);
+  const moves = orderBotMoves(state, allLegalMoves(state, botColor));
+  if (!moves.length) return null;
+  const difficulty = document.querySelector("#bot-difficulty").value;
+  if (difficulty === "easy") return moves[Math.floor(Math.random() * moves.length)];
+
+  const depth = difficulty === "hard" ? 2 : 1;
+  const scoredMoves = moves.map(move => ({
+    move,
+    score: searchBotPosition(simulateBotMove(state, move), depth,
+      -Infinity, Infinity, 1)
+  }));
+  const bestScore = botColor === "w"
+    ? Math.max(...scoredMoves.map(candidate => candidate.score))
+    : Math.min(...scoredMoves.map(candidate => candidate.score));
+  const topMoves = scoredMoves.filter(candidate => candidate.score === bestScore);
+  if (difficulty === "medium" && topMoves.length < 4) {
+    const nearBest = scoredMoves.filter(candidate =>
+      botColor === "w" ? candidate.score >= bestScore - 120 : candidate.score <= bestScore + 120);
+    const choices = nearBest.slice(0, 4);
+    return choices[Math.floor(Math.random() * choices.length)].move;
+  }
+  return topMoves[Math.floor(Math.random() * topMoves.length)].move;
+}
+
+function scheduleBotMove() {
+  if (botTurnTimer) window.clearTimeout(botTurnTimer);
+  setRoomStatus("Rift Bot is thinking…", "waiting");
+  botTurnTimer = window.setTimeout(() => {
+    botTurnTimer = null;
+    if (gameMode !== "bot" || !gameStarted || state.gameOver || state.turn === playerColor) return;
+    try {
+      const move = chooseBotMove();
+      if (!move) {
+        updateGameStatus();
+        render();
+        return;
+      }
+      commitMove(move.from, move);
+    } catch (error) {
+      console.error("Rift Bot could not find a move.", error);
+      setRoomStatus("The bot ran into a problem calculating its move. Please start a new game.", "error");
+    }
+  }, 250);
+}
+
 function lockInPlayer(color) {
   if (lobby[color].ready || gameStarted) return;
   lobby[color] = readProfile(color);
@@ -772,7 +949,10 @@ function lockInPlayer(color) {
 
 document.querySelector("#white-ready-button").addEventListener("click", () => lockInPlayer("w"));
 document.querySelector("#black-ready-button").addEventListener("click", () => lockInPlayer("b"));
+document.querySelector("#start-bot-button").addEventListener("click", startBotGame);
 document.querySelector("#new-game-button").addEventListener("click", async () => {
+  if (botTurnTimer) window.clearTimeout(botTurnTimer);
+  botTurnTimer = null;
   const leftRoom = await stopOnlineRoom();
   gameMode = "local";
   playerColor = "w";
@@ -1676,6 +1856,8 @@ async function joinNamedRoom(roomId) {
 }
 
 async function stopOnlineRoom() {
+  if (botTurnTimer) window.clearTimeout(botTurnTimer);
+  botTurnTimer = null;
   const connection = dataConnection;
   const oldRoomId = activeRoomId;
   if (joinRetryTimer) window.clearInterval(joinRetryTimer);

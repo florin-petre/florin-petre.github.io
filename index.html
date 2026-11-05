@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#111717">
   <title>Rift Chess</title>
-  <link rel="stylesheet" href="styles.css?v=profiles-rooms-7">
+  <link rel="stylesheet" href="styles.css?v=bot-play-1">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="config.js?v=profiles-rooms-7" defer></script>
-  <script src="script.js?v=profiles-rooms-7" defer></script>
+  <script src="config.js?v=bot-play-1" defer></script>
+  <script src="script.js?v=bot-play-1" defer></script>
 </head>
 <body>
   <main class="app-shell">
@@ -120,7 +120,7 @@
             <span class="eyebrow">BEFORE THE BATTLE</span>
             <h2 id="setup-title">Choose your rift loadout</h2>
           </div>
-          <p class="setup-intro" id="setup-intro">Name both players, choose your pieces and powers, then both players lock in. The game stays locked until both are ready.</p>
+          <p class="setup-intro" id="setup-intro">Set both rift loadouts for pass-and-play, or pick a bot difficulty and side to play solo.</p>
           <div class="setup-player" data-color="w">
             <div class="setup-player-title"><span class="mini-dot light-dot"></span> White <span class="setup-ready-status" id="white-ready-status" aria-live="polite">NOT READY</span></div>
             <label class="player-name-field">Player name
@@ -192,6 +192,22 @@
             <button class="ready-button" id="black-ready-button" type="button">Black is ready</button>
           </div>
           <p class="setup-ready-hint" id="setup-ready-hint">Both players must lock their choices before the first move.</p>
+          <div class="bot-settings">
+            <label>Bot difficulty
+              <select id="bot-difficulty">
+                <option value="easy">Easy</option>
+                <option value="medium" selected>Medium</option>
+                <option value="hard">Hard</option>
+              </select>
+            </label>
+            <label>Play as
+              <select id="human-color">
+                <option value="w">White</option>
+                <option value="b">Black</option>
+              </select>
+            </label>
+          </div>
+          <button class="secondary-button bot-start-button" id="start-bot-button" type="button">Play against the bot</button>
         </section>
 
         <section class="online-card" aria-labelledby="online-title">
@@ -225,6 +241,7 @@
             <li>Standard chess rules on files L, a–h, and R. Neutral Rift Wardens hold L4/L5 and R4/R5: they cannot move, be captured, or be crossed, and they do not attack. Click a piece, then a highlighted square.</li>
             <li>Your outer pieces move as bishops, rooks, or knights to start.</li>
             <li>Choose a different extra power for each rift piece: Knight leap, Rook stride, or Bishop glide. Rift pieces awaken after 3 moves; their chosen power is public and surges on moves 6, 9, 12, and so on.</li>
+            <li>Play against Rift Bot on Easy, Medium, or Hard. The bot uses the same legal moves and rift powers as a human player.</li>
             <li>Check, checkmate, castling, en passant, and pawn promotion are in play.</li>
           </ul>
         </details>
