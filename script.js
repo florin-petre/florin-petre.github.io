@@ -1029,9 +1029,16 @@ document.querySelector("#account-form").addEventListener("submit", async event =
     return;
   }
   if (result.error) {
-    setAccountStatus(signup
-      ? "Could not create that profile. The name may already be taken, or Supabase authentication needs checking."
-      : "Login failed. Check your player name and password.", "error");
+    const message = result.error.message || "Unknown authentication error.";
+    const normalizedMessage = message.toLowerCase();
+    const friendlyMessage = signup && /(already registered|already exists|user already)/.test(normalizedMessage)
+      ? "That username already has a profile. Log in instead, or choose another name."
+      : signup && /(invalid email|email address.*invalid)/.test(normalizedMessage)
+        ? "Supabase rejected the username-based account address. Check the Email provider settings and share this error with the site owner."
+        : signup && /(signup.*disabled|signups not allowed)/.test(normalizedMessage)
+          ? "New accounts are disabled in Supabase. Enable signups under Authentication settings."
+          : `${signup ? "Profile creation failed" : "Login failed"}: ${message}`;
+    setAccountStatus(friendlyMessage, "error");
     return;
   }
   if (!result.data.session) {
