@@ -34,12 +34,13 @@ let peer = null;
 let dataConnection = null;
 let roomToken = null;
 let remoteMovePending = false;
+let lobby = null;
 
-function makePiece(color, type, rift = false) {
-  return { color, type, rift, moves: 0 };
+function makePiece(color, type, rift = false, riftPower = null) {
+  return { color, type, rift, riftPower, moves: 0 };
 }
 
-function freshState(options) {
+function freshState(options, players) {
   const board = Array.from({ length: 8 }, () => Array(10).fill(null));
   const home = ["R", "N", "B", "Q", "K", "B", "N", "R"];
   for (let col = 1; col <= 8; col += 1) {
@@ -50,8 +51,8 @@ function freshState(options) {
   }
   for (const color of ["w", "b"]) {
     const row = color === "w" ? 7 : 0;
-    board[row][0] = makePiece(color, options[color].left, true);
-    board[row][9] = makePiece(color, options[color].right, true);
+    board[row][0] = makePiece(color, options[color].left.type, true, options[color].left.power);
+    board[row][9] = makePiece(color, options[color].right.type, true, options[color].right.power);
   }
   return {
     board,
@@ -63,6 +64,10 @@ function freshState(options) {
     lastMove: null,
     captured: { w: [], b: [] },
     history: [],
+    players: {
+      w: { name: players.w.name },
+      b: { name: players.b.name }
+    },
     gameOver: false
   };
 }
@@ -176,9 +181,10 @@ function pseudoMoves(game, row, col, includeSurge = true) {
   }
 
   if (includeSurge && piece.rift && piece.moves >= 3 && (piece.moves + 1) % 3 === 0) {
-    const surgeMoves = piece.type === "N"
-      ? slidingMovesFrom(board, row, col, color, ORTHOGONALS)
-      : leapMovesFrom(board, row, col, color, KNIGHT_STEPS);
+    const surgeMoves = piece.riftPower === "N"
+      ? leapMovesFrom(board, row, col, color, KNIGHT_STEPS)
+      : slidingMovesFrom(board, row, col, color,
+        piece.riftPower === "R" ? ORTHOGONALS : DIAGONALS);
     for (const move of surgeMoves) {
       if (!moves.some(candidate => candidate.row === move.row && candidate.col === move.col)) {
         moves.push({ ...move, surge: true });
@@ -243,8 +249,9 @@ function isSquareAttacked(board, row, col, byColor) {
       const queenAttack = piece.type === "Q" && (diagonal || orthogonal) && canSlide(fromRow, fromCol);
       if (pawnAttack || kingAttack || knightAttack || bishopAttack || rookAttack || queenAttack) return true;
       if (piece.rift && isSurgeAvailable(piece)) {
-        if (piece.type === "N" && orthogonal && canSlide(fromRow, fromCol)) return true;
-        if ((piece.type === "B" || piece.type === "R") && knightLeap) return true;
+        if (piece.riftPower === "N" && knightLeap) return true;
+        if (piece.riftPower === "R" && orthogonal && canSlide(fromRow, fromCol)) return true;
+        if (piece.riftPower === "B" && diagonal && canSlide(fromRow, fromCol)) return true;
       }
     }
   }
@@ -370,13 +377,14 @@ function commitMove(from, move, promotion = "Q") {
 function updateGameStatus() {
   const checked = isInCheck(state.board, state.turn);
   const options = allLegalMoves(state, state.turn);
-  const colorName = state.turn === "w" ? "White" : "Black";
+  const colorName = state.players[state.turn].name;
+  const winnerName = state.players[opposite(state.turn)].name;
   state.gameOver = options.length === 0;
   statusDot.classList.toggle("in-check", checked);
   if (state.gameOver) {
     statusLabel.textContent = checked ? "CHECKMATE" : "STALEMATE";
     statusElement.textContent = checked
-      ? `${colorName === "White" ? "Black" : "White"} wins. The king is trapped.`
+      ? `${winnerName} wins. ${colorName}'s king is trapped.`
       : "Draw by stalemate. No legal moves remain.";
   } else if (checked) {
     statusLabel.textContent = "KING IN CHECK";
@@ -503,13 +511,16 @@ function renderRiftPieces() {
         const piece = state.board[row][col];
         if (!piece || !piece.rift || piece.color !== color) continue;
         const awakened = piece.moves >= 3;
-        const moveProgress = piece.moves < 3 ? `${piece.moves}/3 moves to awaken` :
-          `${piece.moves % 3}/3 to next surge`;
-        const ability = piece.type === "N" ? "rook slides" : "knight leap";
-        pieces.push(`<div class="rift-piece">
+        const progress = piece.moves < 3
+          ? `${piece.moves}/3 moves to awaken`
+          : 3 - (piece.moves % 3) === 1
+            ? "Surge ready next move"
+            : `Surge in ${3 - (piece.moves % 3)} moves`;
+        const ability = { N: "Knight leap", R: "Rook stride", B: "Bishop glide" }[piece.riftPower];
+        pieces.push(`<div class="rift-piece-card">
           <span class="rift-piece-symbol">${SYMBOLS[color][piece.type]}</span>
-          <div class="rift-piece-main"><strong>${color === "w" ? "White" : "Black"} ${NAMES[piece.type]} · ${algebraic(row, col)}</strong>
-          <span>${awakened ? `Awakened · ${ability} surge` : moveProgress}</span></div>
+          <div class="rift-piece-main"><strong>${escapeHtml(state.players[color].name)} · ${NAMES[piece.type]} · ${algebraic(row, col)}</strong>
+          <span>${ability} · ${progress}</span></div>
           <span class="rift-piece-level${awakened ? " awakened" : ""}">${awakened ? "LEVEL 1" : "LEVEL 0"}</span>
         </div>`);
       }
@@ -521,14 +532,28 @@ function renderRiftPieces() {
 function renderPlayerStrips() {
   for (const color of ["w", "b"]) {
     const indicator = document.querySelector(`#${color === "w" ? "white" : "black"}-turn`);
+    const name = document.querySelector(`#${color === "w" ? "white" : "black"}-player-display`);
+    const playerName = gameStarted && state.players
+      ? state.players[color].name
+      : (lobby && lobby[color].name) || (color === "w" ? "White" : "Black");
+    name.textContent = playerName;
     const isCurrentTurn = gameStarted && state.turn === color && !state.gameOver;
     const isMyColor = gameMode === "local" || playerColor === color;
     indicator.classList.toggle("is-active", isCurrentTurn && isMyColor);
-    indicator.textContent = !gameStarted || state.gameOver
-      ? "WAITING"
-      : isCurrentTurn
+    if (gameStarted && !state.gameOver) {
+      indicator.textContent = isCurrentTurn
         ? (isMyColor ? "YOUR TURN" : "THEIR TURN")
-        : (isMyColor ? "WAITING" : "WAITING");
+        : "WAITING";
+    } else if (lobby) {
+      const opponentConnected = gameMode === "local" || Boolean(dataConnection && dataConnection.open);
+      indicator.textContent = lobby[color].ready
+        ? "READY"
+        : isMyColor
+          ? "NOT READY"
+          : opponentConnected ? "NOT READY" : "OFFLINE";
+    } else {
+      indicator.textContent = "WAITING";
+    }
   }
   for (const color of ["w", "b"]) {
     const captured = state.captured[color].map(piece => SYMBOLS[piece.color][piece.type]).join("");
@@ -543,36 +568,201 @@ function render() {
   renderBoard();
   renderRiftPieces();
   renderPlayerStrips();
+  renderLobby();
 }
 
-function readOptions() {
+function escapeHtml(text) {
+  const element = document.createElement("span");
+  element.textContent = text;
+  return element.innerHTML;
+}
+
+function defaultProfile(name = "Player") {
   return {
-    w: { left: document.querySelector("#white-left").value, right: document.querySelector("#white-right").value },
-    b: { left: document.querySelector("#black-left").value, right: document.querySelector("#black-right").value }
+    name,
+    ready: false,
+    options: {
+      left: { type: "R", power: "B" },
+      right: { type: "N", power: "R" }
+    }
   };
 }
 
-function startNewGame() {
-  stopOnlineRoom();
-  state = freshState(readOptions());
-  gameMode = "local";
-  playerColor = "w";
+function getPlayerName(color) {
+  return document.querySelector(`#${color === "w" ? "white" : "black"}-player-name`).value.trim().slice(0, 24) ||
+    (color === "w" ? "White" : "Black");
+}
+
+function readProfile(color) {
+  const prefix = color === "w" ? "white" : "black";
+  return {
+    name: getPlayerName(color),
+    ready: false,
+    options: {
+      left: {
+        type: document.querySelector(`#${prefix}-left`).value,
+        power: document.querySelector(`#${prefix}-left-power`).value
+      },
+      right: {
+        type: document.querySelector(`#${prefix}-right`).value,
+        power: document.querySelector(`#${prefix}-right-power`).value
+      }
+    }
+  };
+}
+
+function currentPlayers() {
+  return {
+    w: { name: lobby.w.name || getPlayerName("w") },
+    b: { name: lobby.b.name || getPlayerName("b") }
+  };
+}
+
+function renderLobby() {
+  if (!lobby) return;
+  for (const color of ["w", "b"]) {
+    const profile = lobby[color];
+    const side = document.querySelector(`.setup-player[data-color="${color}"]`);
+    const nameField = document.querySelector(`#${color === "w" ? "white" : "black"}-player-name`);
+    const readyButton = document.querySelector(`#${color === "w" ? "white" : "black"}-ready-button`);
+    const readyStatus = document.querySelector(`#${color === "w" ? "white" : "black"}-ready-status`);
+    const isEditable = gameMode === "local" || color === playerColor;
+    side.classList.toggle("opponent-setup", !isEditable);
+    for (const control of side.querySelectorAll("input, select")) {
+      control.disabled = !isEditable || profile.ready || gameStarted;
+    }
+    readyButton.hidden = !isEditable;
+    readyButton.disabled = profile.ready || gameStarted ||
+      (gameMode !== "local" && (!dataConnection || !dataConnection.open));
+    readyButton.textContent = profile.ready ? "Ready — locked in" : `${profile.name || (color === "w" ? "White" : "Black")} is ready`;
+    readyStatus.textContent = profile.ready ? "READY" : (isEditable ? "NOT READY" : "WAITING");
+    readyStatus.classList.toggle("is-ready", profile.ready);
+    if (nameField.value !== profile.name && profile.name) nameField.value = profile.name;
+  }
+  const readyCount = Number(lobby.w.ready) + Number(lobby.b.ready);
+  const hint = document.querySelector("#setup-ready-hint");
+  const intro = document.querySelector("#setup-intro");
+  if (gameMode === "local") {
+    intro.textContent = "Name both players, choose your pieces and powers, then both players lock in. The game stays locked until both are ready.";
+    hint.textContent = readyCount === 2 ? "Both players are ready. Starting the game…" :
+      `${readyCount}/2 ready — both players must lock their choices before the first move.`;
+  } else if (gameMode === "host" || gameMode === "guest") {
+    const otherColor = playerColor === "w" ? "b" : "w";
+    intro.textContent = playerColor === "w"
+      ? "Choose your White name, pieces, and powers. Your friend joins as Black; both players must ready up before the board unlocks."
+      : "Choose your Black name, pieces, and powers. The host's White setup is shown above. Both players must ready up before the board unlocks.";
+    hint.textContent = !dataConnection || !dataConnection.open
+      ? "Waiting for your opponent to join the room."
+      : lobby[playerColor].ready && lobby[otherColor].ready
+        ? "Both players are ready. Waiting for the host to start the game."
+      : lobby[otherColor].ready
+        ? `${lobby[otherColor].name} is ready. Lock in your choices to start.`
+        : `Waiting for ${lobby[otherColor].name || "your opponent"} to lock in.`;
+  } else {
+    hint.textContent = "Both players must lock their choices before the first move.";
+  }
+  document.querySelector("#white-player-display").textContent = lobby.w.name || "White";
+  document.querySelector("#black-player-display").textContent = lobby.b.name || "Black";
+}
+
+function sendLobby() {
+  if (dataConnection && dataConnection.open && gameMode === "host") {
+    dataConnection.send({ type: "lobby", players: lobby });
+  }
+}
+
+function validProfile(profile) {
+  const validChoice = choice => choice &&
+    ["R", "B", "N"].includes(choice.type) &&
+    ["R", "B", "N"].includes(choice.power) &&
+    choice.type !== choice.power;
+  return profile && typeof profile.name === "string" &&
+    profile.name.trim().length > 0 && profile.name.length <= 24 &&
+    typeof profile.ready === "boolean" &&
+    profile.options && validChoice(profile.options.left) && validChoice(profile.options.right);
+}
+
+function setProfileInputs(color, profile) {
+  const prefix = color === "w" ? "white" : "black";
+  document.querySelector(`#${prefix}-player-name`).value = profile.name;
+  for (const side of ["left", "right"]) {
+    document.querySelector(`#${prefix}-${side}`).value = profile.options[side].type;
+    document.querySelector(`#${prefix}-${side}-power`).value = profile.options[side].power;
+    updatePowerOptions(color, side);
+  }
+}
+
+function updatePowerOptions(color, side) {
+  const prefix = color === "w" ? "white" : "black";
+  const type = document.querySelector(`#${prefix}-${side}`).value;
+  const powerSelect = document.querySelector(`#${prefix}-${side}-power`);
+  for (const option of powerSelect.options) option.disabled = option.value === type;
+  if (powerSelect.value === type) {
+    powerSelect.value = type === "R" ? "B" : "R";
+  }
+}
+
+function syncEditedProfile(color) {
+  if (gameStarted || !lobby || lobby[color].ready) return;
+  lobby[color] = readProfile(color);
+  state = freshState({ w: lobby.w.options, b: lobby.b.options }, currentPlayers());
+  render();
+  if (gameMode === "host") sendLobby();
+  if (gameMode === "guest" && dataConnection && dataConnection.open) {
+    dataConnection.send({ type: "setup", player: "b", profile: lobby.b });
+  }
+}
+
+function beginPreparedGame() {
+  if (gameMode === "guest" || !lobby.w.ready || !lobby.b.ready || gameStarted) return;
+  state = freshState(
+    { w: lobby.w.options, b: lobby.b.options },
+    currentPlayers()
+  );
   gameStarted = true;
   document.querySelector("#setup-card").hidden = true;
   updateGameStatus();
   render();
+  if (gameMode === "host") {
+    dataConnection.send({ type: "start", state: roomSnapshot() });
+    setRoomStatus("Both players are ready. The game is live!", "connected");
+  }
 }
 
-document.querySelector("#start-button").addEventListener("click", startNewGame);
+function lockInPlayer(color) {
+  if (lobby[color].ready || gameStarted) return;
+  lobby[color] = readProfile(color);
+  lobby[color].ready = true;
+  render();
+  if (gameMode === "guest") {
+    if (!dataConnection || !dataConnection.open) {
+      lobby[color].ready = false;
+      renderLobby();
+      setRoomStatus("Connect to the host before locking in your setup.", "error");
+      return;
+    }
+    dataConnection.send({ type: "setup", player: "b", profile: lobby.b });
+    setRoomStatus("Your setup is locked. Waiting for the host to ready up.", "waiting");
+  } else if (gameMode === "host") {
+    sendLobby();
+  }
+  if (gameMode !== "guest" && lobby.w.ready && lobby.b.ready) beginPreparedGame();
+}
+
+document.querySelector("#white-ready-button").addEventListener("click", () => lockInPlayer("w"));
+document.querySelector("#black-ready-button").addEventListener("click", () => lockInPlayer("b"));
 document.querySelector("#new-game-button").addEventListener("click", () => {
   stopOnlineRoom();
   gameMode = "local";
   playerColor = "w";
   gameStarted = false;
-  state = freshState(readOptions());
+  lobby = { w: readProfile("w"), b: readProfile("b") };
+  lobby.w.ready = false;
+  lobby.b.ready = false;
+  state = freshState({ w: lobby.w.options, b: lobby.b.options }, currentPlayers());
   document.querySelector("#setup-card").hidden = false;
   statusLabel.textContent = "GAME STATUS";
-  statusElement.textContent = "Choose your rift pieces to begin.";
+  statusElement.textContent = "Choose player names and rift loadouts, then both players ready up.";
   statusDot.classList.remove("in-check");
   document.querySelector("#create-room-button").disabled = false;
   document.querySelector("#create-room-button").innerHTML = 'Create online room <span aria-hidden="true">↗</span>';
@@ -581,14 +771,17 @@ document.querySelector("#new-game-button").addEventListener("click", () => {
   setRoomStatus("Online play needs this page to be hosted on HTTPS.");
   render();
 });
-document.querySelectorAll(".setup-player select").forEach(select => {
-  select.addEventListener("change", () => {
-    if (!gameStarted) {
-      state = freshState(readOptions());
-      render();
-    }
-  });
-});
+for (const color of ["w", "b"]) {
+  const prefix = color === "w" ? "white" : "black";
+  for (const side of ["left", "right"]) {
+    document.querySelector(`#${prefix}-${side}`).addEventListener("change", () => {
+      updatePowerOptions(color, side);
+      syncEditedProfile(color);
+    });
+    document.querySelector(`#${prefix}-${side}-power`).addEventListener("change", () => syncEditedProfile(color));
+  }
+  document.querySelector(`#${prefix}-player-name`).addEventListener("input", () => syncEditedProfile(color));
+}
 document.querySelector("#flip-button").addEventListener("click", event => {
   flipped = !flipped;
   event.currentTarget.setAttribute("aria-pressed", String(flipped));
@@ -640,6 +833,7 @@ function validRemoteState(remoteState) {
     (piece && ["w", "b"].includes(piece.color) &&
       ["K", "Q", "R", "B", "N", "P"].includes(piece.type) &&
       typeof piece.rift === "boolean" &&
+      (!piece.rift || ["R", "B", "N"].includes(piece.riftPower)) &&
       Number.isInteger(piece.moves) && piece.moves >= 0 && piece.moves <= 100000);
   const validSquare = square => square &&
     Number.isInteger(square.row) && Number.isInteger(square.col) &&
@@ -654,6 +848,9 @@ function validRemoteState(remoteState) {
     ["w", "b"].includes(remoteState.turn) &&
     Array.isArray(remoteState.history) && remoteState.history.length <= 10000 &&
     remoteState.history.every(validHistory) &&
+    remoteState.players && ["w", "b"].every(color =>
+      remoteState.players[color] && typeof remoteState.players[color].name === "string" &&
+      remoteState.players[color].name.length > 0 && remoteState.players[color].name.length <= 24) &&
     remoteState.captured && Array.isArray(remoteState.captured.w) &&
     Array.isArray(remoteState.captured.b) &&
     remoteState.captured.w.every(piece => piece !== null && validPiece(piece)) &&
@@ -671,16 +868,34 @@ function receiveRoomData(connection, message) {
   if (!message || typeof message !== "object") return;
   if (gameMode === "host") {
     if (!connection.roomAuthenticated) {
-      if (message.type !== "join" || message.token !== roomToken) {
+      if (message.type !== "join" || message.token !== roomToken || !validProfile(message.profile)) {
         connection.close();
         return;
       }
       connection.roomAuthenticated = true;
-      setRoomStatus("Friend connected. You are White; your friend is Black.", "connected");
-      sendRoomState();
+      lobby.b = { ...message.profile, ready: false, name: message.profile.name.trim() };
+      setProfileInputs("b", lobby.b);
+      setRoomStatus(`${lobby.b.name} joined as Black. Both players need to ready up.`, "connected");
+      render();
+      if (gameStarted) {
+        connection.send({ type: "start", state: roomSnapshot() });
+      } else {
+        sendLobby();
+      }
+      return;
+    }
+    if (message.type === "setup" && message.player === "b" && validProfile(message.profile) && !gameStarted) {
+      if (lobby.b.ready && !message.profile.ready) return;
+      lobby.b = { ...message.profile, name: message.profile.name.trim() };
+      setProfileInputs("b", lobby.b);
+      render();
+      sendLobby();
+      if (lobby.w.ready && lobby.b.ready) beginPreparedGame();
+      else setRoomStatus(`${lobby.b.name} ${lobby.b.ready ? "is ready" : "is choosing a loadout"}.`, "connected");
       return;
     }
     if (message.type !== "move" || !Number.isInteger(message.version) ||
+        !gameStarted ||
         message.version !== state.history.length ||
         !message.from || !message.to ||
         !Number.isInteger(message.from.row) || !Number.isInteger(message.from.col) ||
@@ -694,11 +909,21 @@ function receiveRoomData(connection, message) {
     if (piece.type === "P" && (move.row === 0 || move.row === 7) &&
         !["Q", "R", "B", "N"].includes(message.promotion)) return;
     commitMove(message.from, move, message.promotion);
-    setRoomStatus("Friend connected. You are White; your friend is Black.", "connected");
+    setRoomStatus(`${lobby.b.name} is connected.`, "connected");
     return;
   }
 
-  if (gameMode === "guest" && message.type === "state" && validRemoteState(message.state) &&
+  if (gameMode === "guest" && message.type === "lobby" && !gameStarted &&
+      message.players && validProfile(message.players.w) && validProfile(message.players.b)) {
+    lobby.w = { ...message.players.w };
+    if (!lobby.b.ready) lobby.b = { ...message.players.b, ready: false };
+    setProfileInputs("w", lobby.w);
+    render();
+    setRoomStatus(`${lobby.w.name} is hosting as White. Choose your Black loadout and ready up.`, "connected");
+    return;
+  }
+
+  if (gameMode === "guest" && message.type === "start" && validRemoteState(message.state) &&
       (!state || message.state.history.length >= state.history.length)) {
     state = {
       ...message.state,
@@ -706,17 +931,35 @@ function receiveRoomData(connection, message) {
       legalMoves: []
     };
     gameStarted = true;
+    lobby.w = { ...lobby.w, name: state.players.w.name, ready: true };
+    lobby.b = { ...lobby.b, name: state.players.b.name, ready: true };
     remoteMovePending = false;
     updateGameStatus();
     render();
-    setRoomStatus("Connected to the room. You are Black.", "connected");
+    document.querySelector("#create-room-button").textContent = "Joined as Black";
+    setRoomStatus(`Game started. You are Black; White is ${state.players.w.name}.`, "connected");
+    return;
+  }
+
+  if (gameMode === "guest" && message.type === "state" && gameStarted &&
+      validRemoteState(message.state) &&
+      (!state || message.state.history.length >= state.history.length)) {
+    state = {
+      ...message.state,
+      selected: null,
+      legalMoves: []
+    };
+    remoteMovePending = false;
+    updateGameStatus();
+    render();
+    setRoomStatus(`${state.players.w.name} is connected. You are Black.`, "connected");
   }
 }
 
 function watchConnection(connection, role) {
   connection.on("open", () => {
     if (role === "guest") {
-      connection.send({ type: "join", token: roomToken });
+      connection.send({ type: "join", token: roomToken, profile: readProfile("b") });
       setRoomStatus("Room found. Connecting to the host...", "waiting");
     }
     if (role === "host" && connection.roomAuthenticated) sendRoomState();
@@ -726,8 +969,13 @@ function watchConnection(connection, role) {
     if (dataConnection === connection) dataConnection = null;
     if ((role === "host" && gameMode !== "host") || (role === "guest" && gameMode !== "guest")) return;
     if (role === "host") {
+      if (!gameStarted) {
+        lobby.b = defaultProfile("Black");
+        setProfileInputs("b", lobby.b);
+        render();
+      }
       setRoomStatus(connection.roomAuthenticated
-        ? "Friend disconnected. The invite link can be used to rejoin."
+        ? `${lobby.b.name} disconnected. The invite link can be used to rejoin.`
         : "Waiting for your friend to join.", "waiting");
     } else {
       remoteMovePending = false;
@@ -753,13 +1001,14 @@ function createOnlineRoom() {
   gameMode = "host";
   playerColor = "w";
   roomToken = createRoomToken();
-  state = freshState(readOptions());
-  gameStarted = true;
-  document.querySelector("#setup-card").hidden = true;
+  lobby = { w: readProfile("w"), b: defaultProfile("Black") };
+  state = freshState({ w: lobby.w.options, b: lobby.b.options }, currentPlayers());
+  gameStarted = false;
+  document.querySelector("#setup-card").hidden = false;
   document.querySelector("#create-room-button").disabled = true;
   document.querySelector("#create-room-button").textContent = "Creating room...";
-  updateGameStatus();
   render();
+  renderLobby();
   setRoomStatus("Connecting to the room service...", "waiting");
 
   peer = new Peer();
@@ -770,7 +1019,7 @@ function createOnlineRoom() {
     inviteLinkInput.value = invite.href;
     inviteLinkRow.hidden = false;
     document.querySelector("#create-room-button").textContent = "Room created";
-    setRoomStatus("Invite ready. Waiting for your friend to join. Keep this page open.", "waiting");
+    setRoomStatus(`${lobby.w.name}, your invite is ready. Lock in your setup and wait for your friend.`, "waiting");
   });
   peer.on("connection", connection => {
     if (dataConnection) {
@@ -813,9 +1062,16 @@ function joinOnlineRoom(roomId, token) {
   roomToken = token;
   remoteMovePending = false;
   gameStarted = false;
-  document.querySelector("#setup-card").hidden = true;
+  lobby = {
+    w: defaultProfile("White"),
+    b: readProfile("b")
+  };
+  state = freshState({ w: lobby.w.options, b: lobby.b.options }, currentPlayers());
+  document.querySelector("#setup-card").hidden = false;
   document.querySelector("#create-room-button").disabled = true;
   document.querySelector("#create-room-button").textContent = "Joining room...";
+  render();
+  renderLobby();
   setRoomStatus("Finding the host's room...", "waiting");
   peer = new Peer();
   peer.on("open", () => {
@@ -862,7 +1118,11 @@ document.querySelector("#copy-invite-button").addEventListener("click", async ()
   }
 });
 
-state = freshState(readOptions());
+for (const color of ["w", "b"]) {
+  for (const side of ["left", "right"]) updatePowerOptions(color, side);
+}
+lobby = { w: readProfile("w"), b: readProfile("b") };
+state = freshState({ w: lobby.w.options, b: lobby.b.options }, currentPlayers());
 render();
 const invite = new URL(window.location.href);
 const roomToJoin = invite.searchParams.get("room");

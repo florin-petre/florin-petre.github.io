@@ -358,11 +358,21 @@ button { color: inherit; }
   margin: 5px 0 0;
   font: 600 15px Manrope, sans-serif;
 }
+.setup-intro {
+  margin: -4px 0 14px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.55;
+}
 .setup-player {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 9px 10px;
   margin-bottom: 13px;
+  padding: 11px;
+  border: 1px solid #303b38;
+  border-radius: 6px;
+  background: rgba(15, 21, 20, .55);
 }
 .setup-player-title {
   grid-column: 1 / -1;
@@ -373,6 +383,13 @@ button { color: inherit; }
   font-size: 11px;
   font-weight: 600;
 }
+.setup-ready-status {
+  margin-left: auto;
+  color: #a9a69a;
+  font: 8px "DM Mono", monospace;
+  letter-spacing: .08em;
+}
+.setup-ready-status.is-ready { color: var(--accent); }
 .mini-dot { width: 7px; height: 7px; border-radius: 50%; }
 .light-dot { background: var(--accent); }
 .dark-dot { background: #b7a0e9; }
@@ -383,6 +400,7 @@ button { color: inherit; }
   color: var(--muted);
   font-size: 10px;
 }
+.setup-player .player-name-field { grid-column: 1 / -1; }
 .setup-player select {
   width: 100%;
   padding: 8px 9px;
@@ -393,7 +411,39 @@ button { color: inherit; }
   background: #151c1b;
   font-size: 11px;
 }
-.setup-player select:focus-visible { border-color: var(--accent); }
+.setup-player input {
+  width: 100%;
+  padding: 8px 9px;
+  border: 1px solid #394540;
+  border-radius: 5px;
+  outline: none;
+  color: var(--text);
+  background: #151c1b;
+  font-size: 11px;
+}
+.setup-player select:focus-visible, .setup-player input:focus-visible { border-color: var(--accent); }
+.setup-player :disabled { opacity: .58; }
+.setup-player.opponent-setup { background: rgba(15, 21, 20, .3); }
+.ready-button {
+  grid-column: 1 / -1;
+  min-height: 34px;
+  border: 1px solid rgba(196, 239, 140, .3);
+  border-radius: 5px;
+  color: var(--accent);
+  background: rgba(196, 239, 140, .08);
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 700;
+}
+.ready-button:hover:not(:disabled) { background: rgba(196, 239, 140, .15); }
+.ready-button:disabled { opacity: .58; cursor: default; }
+.ready-button[hidden] { display: none; }
+.setup-ready-hint {
+  margin: 0;
+  color: #a6b0a7;
+  font-size: 9px;
+  line-height: 1.5;
+}
 .primary-button, .secondary-button {
   min-height: 39px;
   border: 0;
@@ -456,7 +506,7 @@ button { color: inherit; }
 .compact-title { margin-bottom: 11px; }
 .rift-piece-list { display: flex; flex-direction: column; gap: 7px; }
 .empty-rifts, .card-footnote { margin: 0; color: var(--muted); font-size: 10px; line-height: 1.55; }
-.rift-piece {
+.rift-piece-card {
   display: grid;
   grid-template-columns: 27px 1fr auto;
   align-items: center;
