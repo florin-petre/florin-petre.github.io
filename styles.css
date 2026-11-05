@@ -427,6 +427,12 @@ button { color: inherit; }
 }
 .presence-dot.online { background: var(--accent); box-shadow: 0 0 7px rgba(196, 239, 140, .4); }
 .presence-label { color: var(--muted); font-size: 9px; }
+.incoming-room small {
+  display: block;
+  margin-top: 3px;
+  color: var(--faint);
+  font-size: 8px;
+}
 .directory-invite, .join-room-button { min-height: 29px; padding: 0 8px; font-size: 9px; }
 .directory-invite:disabled { opacity: .48; cursor: default; }
 .incoming-room { grid-template-columns: minmax(0, 1fr) auto; }

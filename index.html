@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#111717">
   <title>Rift Chess</title>
-  <link rel="stylesheet" href="styles.css?v=profiles-rooms-4">
+  <link rel="stylesheet" href="styles.css?v=profiles-rooms-6">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="config.js?v=profiles-rooms-4" defer></script>
-  <script src="script.js?v=profiles-rooms-4" defer></script>
+  <script src="config.js?v=profiles-rooms-6" defer></script>
+  <script src="script.js?v=profiles-rooms-6" defer></script>
 </head>
 <body>
   <main class="app-shell">
@@ -101,14 +101,14 @@
             <label class="challenge-field">Create a room for this player
               <input id="challenge-username" type="text" maxlength="20" autocomplete="off" placeholder="Exact player name">
             </label>
-            <button class="primary-button" id="create-room-button" type="button">Create private room</button>
+            <button class="primary-button" id="create-room-button" type="button">Create or find room</button>
             <h3 class="directory-heading">Players</h3>
             <div class="player-directory" id="player-directory" aria-live="polite">
               <p class="empty-rifts">Sign in to find players.</p>
             </div>
-            <h3 class="directory-heading">Rooms invited to you</h3>
-            <div class="player-directory" id="incoming-rooms" aria-live="polite">
-              <p class="empty-rifts">No room invitations.</p>
+            <h3 class="directory-heading">Your rooms</h3>
+            <div class="player-directory" id="room-list" aria-live="polite">
+              <p class="empty-rifts">No rooms yet. Invite a player to create one.</p>
             </div>
           </div>
           <p class="room-status" id="room-status" aria-live="polite">Setting up shared player profiles…</p>
@@ -215,6 +215,7 @@
 
         <div class="action-row">
           <button class="secondary-button" id="new-game-button" type="button">New game</button>
+          <button class="secondary-button" id="leave-room-button" type="button" hidden>Leave room</button>
           <button class="secondary-button" id="flip-button" type="button" aria-pressed="false">Flip board</button>
         </div>
 

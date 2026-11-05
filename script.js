@@ -772,8 +772,8 @@ function lockInPlayer(color) {
 
 document.querySelector("#white-ready-button").addEventListener("click", () => lockInPlayer("w"));
 document.querySelector("#black-ready-button").addEventListener("click", () => lockInPlayer("b"));
-document.querySelector("#new-game-button").addEventListener("click", () => {
-  stopOnlineRoom();
+document.querySelector("#new-game-button").addEventListener("click", async () => {
+  const leftRoom = await stopOnlineRoom();
   gameMode = "local";
   playerColor = "w";
   gameStarted = false;
@@ -782,13 +782,19 @@ document.querySelector("#new-game-button").addEventListener("click", () => {
   lobby.b.ready = false;
   state = freshState({ w: lobby.w.options, b: lobby.b.options }, currentPlayers());
   document.querySelector("#setup-card").hidden = false;
+  document.querySelector("#leave-room-button").hidden = true;
   statusLabel.textContent = "GAME STATUS";
   statusElement.textContent = "Choose player names and rift loadouts, then both players ready up.";
   statusDot.classList.remove("in-check");
   setRoomStatus(currentUser
     ? `Signed in as ${accountProfile.username}. Select a player to create a private room.`
     : "Log in or create a profile to play online.");
+  if (!leftRoom) setRoomStatus("New game started, but room presence did not update. The room will remain available.", "error");
   render();
+  if (currentUser) void refreshRooms().catch(error => {
+    console.error("Could not refresh the room list after leaving.", error);
+    setRoomStatus("You left the room, but could not refresh the room list.", "error");
+  });
 });
 for (const color of ["w", "b"]) {
   const prefix = color === "w" ? "white" : "black";
@@ -861,31 +867,63 @@ function renderPlayerDirectory(players) {
   }).join("");
 }
 
+function renderRoomList(rooms) {
+  const roomList = document.querySelector("#room-list");
+  if (!rooms.length) {
+    roomList.innerHTML = '<p class="empty-rifts">No rooms yet. Invite a player to create one.</p>';
+    return;
+  }
+  roomList.innerHTML = rooms.map(room => {
+    const isHost = room.host_id === currentUser.id;
+    const opponent = isHost ? room.invited_name : room.host_name;
+    const hostOnline = room.host_seen_at &&
+      Date.now() - Date.parse(room.host_seen_at) < 90000;
+    const isActive = activeRoomId === room.id;
+    const action = isActive
+      ? `<button class="secondary-button join-room-button" type="button" disabled>In room</button>`
+      : isHost
+        ? `<button class="primary-button join-room-button" type="button" data-action="open" data-room-id="${escapeHtml(room.id)}">Open room</button>`
+        : hostOnline
+          ? `<button class="primary-button join-room-button" type="button" data-action="join" data-room-id="${escapeHtml(room.id)}">${room.game_state ? "Rejoin game" : "Join room"}</button>`
+          : `<button class="secondary-button join-room-button" type="button" disabled>Host offline</button>`;
+    const status = room.game_state ? "Saved game" : room.status === "closed" ? "Closed" : "Waiting";
+    return `<div class="incoming-room">
+      <span><strong>${escapeHtml(opponent)}</strong><small>${status} · Host ${hostOnline ? "online" : "offline"}</small></span>
+      ${action}
+    </div>`;
+  }).join("");
+}
+
 async function refreshRooms() {
   if (!currentUser || !supabaseClient) return;
   const [{ data: players, error: playersError }, { data: rooms, error: roomsError }] = await Promise.all([
     supabaseClient.from("profiles").select("id,username,last_seen_at")
       .neq("id", currentUser.id).order("username"),
     supabaseClient.from("game_rooms")
-      .select("id,host_name,invited_name,status,created_at,updated_at,host_id,invitee_id,guest_id")
-      .eq("invitee_id", currentUser.id)
-      .in("status", ["waiting", "connecting", "playing"])
+      .select("id,host_name,invited_name,status,created_at,updated_at,host_id,invitee_id,guest_id,host_seen_at,game_state")
+      .or(`host_id.eq.${currentUser.id},invitee_id.eq.${currentUser.id}`)
       .order("created_at", { ascending: false })
   ]);
   if (playersError) throw playersError;
   if (roomsError) throw roomsError;
   renderPlayerDirectory(players || []);
-  const activeRooms = (rooms || []).filter(room =>
-    ["waiting", "connecting", "playing"].includes(room.status) &&
-    Date.now() - Date.parse(room.updated_at) < 90000
-  );
-  const incoming = document.querySelector("#incoming-rooms");
-  incoming.innerHTML = activeRooms.length
-    ? activeRooms.map(room => `<div class="incoming-room">
-        <span><strong>${escapeHtml(room.host_name)}</strong> invited you</span>
-        <button class="primary-button join-room-button" type="button" data-room-id="${escapeHtml(room.id)}">${room.status === "waiting" ? "Join room" : "Rejoin room"}</button>
-      </div>`).join("")
-    : '<p class="empty-rifts">No room invitations.</p>';
+  const groupedRooms = new Map();
+  for (const room of (rooms || []).filter(candidate => candidate.status !== "closed")) {
+    const opponentId = room.host_id === currentUser.id ? room.invitee_id : room.host_id;
+    const current = groupedRooms.get(opponentId);
+    const candidateScore = Number(Boolean(room.game_state)) * 2 +
+      Number(Boolean(room.host_seen_at && Date.now() - Date.parse(room.host_seen_at) < 90000));
+    const currentScore = current
+      ? Number(Boolean(current.game_state)) * 2 +
+        Number(Boolean(current.host_seen_at && Date.now() - Date.parse(current.host_seen_at) < 90000))
+      : -1;
+    if (!current || candidateScore > currentScore ||
+        candidateScore === currentScore && Date.parse(room.updated_at) > Date.parse(current.updated_at)) {
+      groupedRooms.set(opponentId, room);
+    }
+  }
+  renderRoomList([...groupedRooms.values()].sort((a, b) =>
+    Date.parse(b.updated_at) - Date.parse(a.updated_at)));
 }
 
 function startRoomHeartbeat() {
@@ -893,13 +931,11 @@ function startRoomHeartbeat() {
   roomHeartbeatTimer = window.setInterval(async () => {
     if (!currentUser || !supabaseClient) return;
     try {
-      const now = new Date().toISOString();
       const tasks = [
         supabaseClient.rpc("touch_profile")
       ];
       if (activeRoomId && gameMode === "host") {
-        tasks.push(supabaseClient.from("game_rooms").update({ updated_at: now })
-          .eq("id", activeRoomId).eq("host_id", currentUser.id));
+        tasks.push(supabaseClient.rpc("touch_host_room", { p_room_id: activeRoomId }));
       }
       const results = await Promise.all(tasks);
       for (const result of results) {
@@ -1036,7 +1072,7 @@ document.querySelector("#account-form").addEventListener("submit", async event =
       : signup && errorCode === "email_address_invalid"
         ? "Supabase rejected the username-based account address. Check the Email provider settings and share this error with the site owner."
         : signup && errorCode === "signup_disabled"
-          ? "New accounts are disabled in Supabase. Enable signups under Authentication settings."
+          ? "Supabase rejected sign-up. Confirm this dashboard is the project connected to the site, turn on “Allow new users to sign up,” and make sure Email sign-in is enabled under Authentication → Sign In / Providers → Email."
           : `${signup ? "Profile creation failed" : "Login failed"}: ${message}`;
     setAccountStatus(friendlyMessage, "error");
     return;
@@ -1054,7 +1090,7 @@ document.querySelector("#account-form").addEventListener("submit", async event =
 });
 
 document.querySelector("#logout-button").addEventListener("click", async () => {
-  stopOnlineRoom();
+  const leftRoom = await stopOnlineRoom();
   if (roomHeartbeatTimer) window.clearInterval(roomHeartbeatTimer);
   roomHeartbeatTimer = null;
   if (directoryTimer) window.clearInterval(directoryTimer);
@@ -1093,9 +1129,11 @@ document.querySelector("#logout-button").addEventListener("click", async () => {
   if (presenceError) console.error("Could not mark the profile offline.", presenceError);
   setAccountStatus(presenceError
     ? "You are logged out. Your profile may show online for up to 90 seconds."
-    : "You are logged out.", "waiting");
+    : !leftRoom
+      ? "You are logged out, but room presence may take up to 90 seconds to expire."
+      : "You are logged out.", "waiting");
   renderPlayerDirectory([]);
-  document.querySelector("#incoming-rooms").innerHTML = '<p class="empty-rifts">No room invitations.</p>';
+  document.querySelector("#room-list").innerHTML = '<p class="empty-rifts">Sign in to see your rooms.</p>';
   render();
 });
 
@@ -1109,11 +1147,14 @@ document.querySelector("#player-directory").addEventListener("click", event => {
   });
 });
 
-document.querySelector("#incoming-rooms").addEventListener("click", event => {
+document.querySelector("#room-list").addEventListener("click", event => {
   const button = event.target.closest(".join-room-button");
-  if (button) void joinNamedRoom(button.dataset.roomId).catch(error => {
+  if (!button) return;
+  const action = button.dataset.action;
+  const handler = action === "open" ? openNamedRoom : joinNamedRoom;
+  if (action) void handler(button.dataset.roomId).catch(error => {
     console.error("Could not join the private room.", error);
-    setRoomStatus("Could not join this room. Ask the host to try again.", "error");
+    setRoomStatus("Could not open this room. Check your connection and try again.", "error");
   });
 });
 
@@ -1128,11 +1169,23 @@ document.querySelector("#challenge-username").addEventListener("keydown", event 
 });
 
 window.addEventListener("beforeunload", () => {
-  if (activeRoomId && gameMode === "host" && supabaseClient && currentUser) {
-    void supabaseClient.rpc("close_game_room", { p_room_id: activeRoomId });
-  } else if (activeRoomId && gameMode === "guest" && supabaseClient && currentUser) {
+  if (activeRoomId && supabaseClient && currentUser) {
     void supabaseClient.rpc("leave_game_room", { p_room_id: activeRoomId });
   }
+});
+
+document.querySelector("#leave-room-button").addEventListener("click", async () => {
+  const leftRoom = await stopOnlineRoom();
+  gameStarted = false;
+  state = freshState({ w: lobby.w.options, b: lobby.b.options }, currentPlayers());
+  document.querySelector("#setup-card").hidden = false;
+  document.querySelector("#leave-room-button").hidden = true;
+  render();
+  if (currentUser) void refreshRooms().catch(error => {
+    console.error("Could not refresh the room list after leaving.", error);
+    setRoomStatus("You left the room, but could not refresh the room list.", "error");
+  });
+  if (leftRoom) setRoomStatus("You left the room. It remains in Your rooms so you can return later.", "waiting");
 });
 
 function isHostedSecurely() {
@@ -1502,57 +1555,77 @@ async function createNamedRoom() {
     setRoomStatus("No profile has that username. Check the spelling and try again.", "error");
     return;
   }
-  if (Date.now() - Date.parse(invitee.last_seen_at) > 90000) {
-    setRoomStatus(`${invitee.username} is offline. Ask them to log in before creating a room.`, "error");
+  setRoomStatus(`Creating or finding your room with ${invitee.username}…`, "waiting");
+  const { data: room, error: roomError } = await supabaseClient.rpc("create_or_get_game_room", {
+    p_invitee_id: invitee.id
+  });
+  if (roomError || !room) {
+    if (roomError) console.error("Could not create or find the private room.", roomError);
+    setRoomStatus("Could not save this room. Apply the room-persistence SQL migration and try again.", "error");
     return;
   }
+  document.querySelector("#challenge-username").value = "";
+  try {
+    await refreshRooms();
+    setRoomStatus(`Your room with ${invitee.username} is ready. Find it in Your rooms to open or join.`, "connected");
+  } catch (error) {
+    console.error("Could not refresh the player list after creating a room.", error);
+    setRoomStatus("Room created, but the room list could not refresh. Reload to see it.", "error");
+  }
+}
 
-  stopOnlineRoom();
-  gameMode = "host";
-  playerColor = "w";
-  lobby = {
-    w: { ...readProfile("w"), name: accountProfile.username },
-    b: defaultProfile(invitee.username)
-  };
-  document.querySelector("#white-player-name").value = accountProfile.username;
-  setProfileInputs("b", lobby.b);
-  state = freshState({ w: lobby.w.options, b: lobby.b.options }, currentPlayers());
-  gameStarted = false;
-  document.querySelector("#setup-card").hidden = false;
-  render();
-  renderLobby();
-  setRoomStatus(`Creating a private room for ${invitee.username}…`, "waiting");
-  const { data: room, error: roomError } = await supabaseClient.from("game_rooms")
-    .insert({
-      host_id: currentUser.id,
-      invitee_id: invitee.id,
-      host_name: accountProfile.username,
-      invited_name: invitee.username
-    })
-    .select("id")
-    .single();
-  if (roomError) {
-    gameMode = "local";
-    playerColor = "w";
-    lobby = { w: readProfile("w"), b: readProfile("b") };
-    state = freshState({ w: lobby.w.options, b: lobby.b.options }, currentPlayers());
-    render();
-    setRoomStatus("Could not save this room invitation. Please try again.", "error");
+async function openNamedRoom(roomId) {
+  if (!isHostedSecurely() || !currentUser || gameMode === "host" && activeRoomId === roomId) {
+    setRoomStatus("Log in on the published HTTPS website before opening a room.", "error");
+    return;
+  }
+  if (activeRoomId) await stopOnlineRoom();
+  const { data: openResult, error: openError } = await supabaseClient.rpc("open_game_room", {
+    p_room_id: roomId
+  });
+  const room = openResult && openResult.room;
+  if (openError || !room) {
+    if (openError) console.error("Could not open the private room.", openError);
+    setRoomStatus("Could not open this room. Check the room-persistence SQL migration and try again.", "error");
+    await refreshRooms();
     return;
   }
   activeRoomId = room.id;
-  activeRoomOpponentId = invitee.id;
+  activeRoomOpponentId = room.invitee_id;
   opponentIsOnline = false;
-  dataConnection = new RoomTransport(room.id);
-  watchConnection(dataConnection, "host");
-  startRoomHeartbeat();
-  setRoomStatus(`Private room ready for ${invitee.username}. Set your pieces and wait for them to join.`, "waiting");
-  try {
-    await refreshRooms();
-  } catch (error) {
-    console.error("Could not refresh the player list after creating a room.", error);
-    setRoomStatus("Room created, but the player list did not refresh. Your opponent may need to reload.", "error");
+  gameMode = "host";
+  playerColor = "w";
+  remoteMovePending = false;
+  const savedState = openResult.game_state;
+  if (savedState && !validRemoteState(savedState)) {
+    await stopOnlineRoom();
+    throw new Error("The saved game state is invalid.");
   }
+  lobby = {
+    w: { ...readProfile("w"), name: room.host_name, ready: Boolean(savedState) },
+    b: { ...defaultProfile(room.invited_name), ready: Boolean(savedState) }
+  };
+  if (savedState) {
+    state = { ...savedState, selected: null, legalMoves: [] };
+    lobby.w.name = savedState.players.w.name;
+    lobby.b.name = savedState.players.b.name;
+    gameStarted = true;
+  } else {
+    state = freshState({ w: lobby.w.options, b: lobby.b.options }, currentPlayers());
+    gameStarted = false;
+  }
+  document.querySelector("#white-player-name").value = lobby.w.name;
+  setProfileInputs("b", lobby.b);
+  document.querySelector("#setup-card").hidden = gameStarted;
+  document.querySelector("#leave-room-button").hidden = false;
+  render();
+  renderLobby();
+  dataConnection = new RoomTransport(room.id, openResult.cursor);
+  watchConnection(dataConnection, "host");
+  setRoomStatus(gameStarted
+    ? `Reopened your saved game with ${room.invited_name}. Waiting for them to rejoin.`
+    : `Room opened for ${room.invited_name}. Set your pieces and wait for them to join.`, "waiting");
+  await refreshRooms();
 }
 
 async function joinNamedRoom(roomId) {
@@ -1560,11 +1633,12 @@ async function joinNamedRoom(roomId) {
     setRoomStatus("Log in on the published HTTPS website before joining a room.", "error");
     return;
   }
-  stopOnlineRoom();
+  if (activeRoomId) await stopOnlineRoom();
   const { data: joinResult, error: joinError } = await supabaseClient.rpc("join_game_room", { p_room_id: roomId });
   const room = joinResult && joinResult.room;
   if (joinError || !room) {
-    setRoomStatus(joinError ? joinError.message : "The host is no longer available.", "error");
+    if (joinError) console.error("Could not join the room.", joinError);
+    setRoomStatus("Could not join. The host may be offline, or the database migration may not be applied.", "error");
     await refreshRooms();
     return;
   }
@@ -1574,27 +1648,34 @@ async function joinNamedRoom(roomId) {
   gameMode = "guest";
   playerColor = "b";
   remoteMovePending = false;
-  gameStarted = false;
+  const savedState = joinResult.game_state;
+  if (savedState && !validRemoteState(savedState)) {
+    await supabaseClient.rpc("leave_game_room", { p_room_id: room.id });
+    throw new Error("The saved game state is invalid.");
+  }
+  gameStarted = Boolean(savedState);
   lobby = {
     w: defaultProfile(room.host_name),
     b: readProfile("b")
   };
   lobby.b.name = accountProfile.username;
   document.querySelector("#black-player-name").value = accountProfile.username;
-  state = freshState({ w: lobby.w.options, b: lobby.b.options }, currentPlayers());
-  document.querySelector("#setup-card").hidden = false;
+  state = savedState
+    ? { ...savedState, selected: null, legalMoves: [] }
+    : freshState({ w: lobby.w.options, b: lobby.b.options }, currentPlayers());
+  document.querySelector("#setup-card").hidden = gameStarted;
+  document.querySelector("#leave-room-button").hidden = false;
   render();
   renderLobby();
-  setRoomStatus(`Joining ${room.host_name}…`, "waiting");
+  setRoomStatus(`${savedState ? "Rejoining saved game with" : "Joining"} ${room.host_name}…`, "waiting");
   dataConnection = new RoomTransport(room.id, joinResult.cursor);
   dataConnection.remoteUserId = room.host_id;
   watchConnection(dataConnection, "guest");
 }
 
-function stopOnlineRoom() {
+async function stopOnlineRoom() {
   const connection = dataConnection;
   const oldRoomId = activeRoomId;
-  const oldMode = gameMode;
   if (joinRetryTimer) window.clearInterval(joinRetryTimer);
   joinRetryTimer = null;
   dataConnection = null;
@@ -1603,15 +1684,21 @@ function stopOnlineRoom() {
   playerColor = "w";
   remoteMovePending = false;
   if (connection) connection.close();
+  let leftRoom = true;
   if (oldRoomId && supabaseClient && currentUser) {
-    if (oldMode === "host") {
-      void supabaseClient.rpc("close_game_room", { p_room_id: oldRoomId });
-    } else if (oldMode === "guest") {
-      void supabaseClient.rpc("leave_game_room", { p_room_id: oldRoomId });
+    try {
+      const { error } = await supabaseClient.rpc("leave_game_room", { p_room_id: oldRoomId });
+      if (error) throw error;
+    } catch (error) {
+      leftRoom = false;
+      console.error("Could not leave the private room cleanly.", error);
+      setRoomStatus("You left this browser session, but the room could not update your presence.", "error");
     }
   }
   activeRoomOpponentId = null;
   opponentIsOnline = false;
+  document.querySelector("#leave-room-button").hidden = true;
+  return leftRoom;
 }
 
 document.querySelector("#create-room-button").addEventListener("click", () => {
