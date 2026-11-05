@@ -21,8 +21,9 @@ while the invited player is joining or playing.
    - If this project already has profiles and rooms, do **not** rerun the
      original setup SQL. Run
      [`supabase-room-persistence-migration.sql`](./supabase-room-persistence-migration.sql)
-     once instead. It adds room presence and saved-game fields, and updates the
-     room RPCs without dropping profiles or room records.
+     instead. It is safe to rerun after an earlier version of this migration:
+     it backfills saved game snapshots from existing room messages and updates
+     the room RPCs without dropping profiles or room records.
 4. Get the two client values for [`config.js`](./config.js):
    - In the Supabase dashboard, open your project and click **Connect**
      (usually in the project's top bar). Its connection dialog shows the

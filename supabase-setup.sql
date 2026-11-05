@@ -78,6 +78,23 @@ create table public.game_messages (
   primary key (room_id, sequence)
 );
 
+with latest_states as (
+  select distinct on (messages.room_id)
+    messages.room_id,
+    messages.payload->'state' as game_state
+  from public.game_messages as messages
+  join public.game_rooms as rooms
+    on rooms.id = messages.room_id and rooms.host_id = messages.sender_id
+  where messages.payload->>'type' in ('start', 'state')
+    and jsonb_typeof(messages.payload->'state') = 'object'
+  order by messages.room_id, messages.sequence desc
+)
+update public.game_rooms as rooms
+  set game_state = latest_states.game_state
+  from latest_states
+  where rooms.id = latest_states.room_id
+    and rooms.game_state is null;
+
 alter table public.profiles enable row level security;
 alter table public.game_rooms enable row level security;
 alter table public.game_messages enable row level security;

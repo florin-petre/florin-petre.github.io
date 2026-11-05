@@ -1618,6 +1618,7 @@ async function openNamedRoom(roomId) {
   setProfileInputs("b", lobby.b);
   document.querySelector("#setup-card").hidden = gameStarted;
   document.querySelector("#leave-room-button").hidden = false;
+  if (gameStarted) updateGameStatus();
   render();
   renderLobby();
   dataConnection = new RoomTransport(room.id, openResult.cursor);
@@ -1665,6 +1666,7 @@ async function joinNamedRoom(roomId) {
     : freshState({ w: lobby.w.options, b: lobby.b.options }, currentPlayers());
   document.querySelector("#setup-card").hidden = gameStarted;
   document.querySelector("#leave-room-button").hidden = false;
+  if (gameStarted) updateGameStatus();
   render();
   renderLobby();
   setRoomStatus(`${savedState ? "Rejoining saved game with" : "Joining"} ${room.host_name}…`, "waiting");
