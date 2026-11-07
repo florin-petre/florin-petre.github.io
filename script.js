@@ -38,6 +38,8 @@ let activeRoomId = null;
 let activeRoomOpponentId = null;
 let opponentIsOnline = false;
 let botTurnTimer = null;
+let restartVotes = { w: false, b: false };
+let restartVoteVersion = null;
 let directoryTimer = null;
 let roomPollTimer = null;
 let roomHeartbeatTimer = null;
@@ -75,7 +77,8 @@ function freshState(options, players) {
       w: { name: players.w.name },
       b: { name: players.b.name }
     },
-    gameOver: false
+    gameOver: false,
+    result: null
   };
 }
 
@@ -374,11 +377,16 @@ function commitMove(from, move, promotion = "Q") {
   state.lastMove = { from, to: { row: move.row, col: move.col } };
   state.history.push({ color: piece.color, type: piece.type, from, to: { row: move.row, col: move.col }, surge: !!move.surge });
   state.turn = opposite(state.turn);
+  state.result = null;
+  clearRestartVotes();
   state.selected = null;
   state.legalMoves = [];
   updateGameStatus();
   render();
-  if (gameMode === "host") sendRoomState();
+  if (gameMode === "host") {
+    sendRoomState();
+    sendRestartStatus();
+  }
   if (gameMode === "bot") {
     if (state.gameOver) setRoomStatus("Game over.", "connected");
     else if (state.turn !== playerColor) scheduleBotMove();
@@ -391,9 +399,12 @@ function updateGameStatus() {
   const options = allLegalMoves(state, state.turn);
   const colorName = state.players[state.turn].name;
   const winnerName = state.players[opposite(state.turn)].name;
-  state.gameOver = options.length === 0;
+  state.gameOver = Boolean(state.result) || options.length === 0;
   statusDot.classList.toggle("in-check", checked);
-  if (state.gameOver) {
+  if (state.result?.type === "surrender") {
+    statusLabel.textContent = "SURRENDER";
+    statusElement.textContent = `${state.players[opposite(state.result.loser)].name} wins. ${state.players[state.result.loser].name} surrendered.`;
+  } else if (state.gameOver) {
     statusLabel.textContent = checked ? "CHECKMATE" : "STALEMATE";
     statusElement.textContent = checked
       ? `${winnerName} wins. ${colorName}'s king is trapped.`
@@ -587,6 +598,27 @@ function render() {
   renderRiftPieces();
   renderPlayerStrips();
   renderLobby();
+  renderMatchControls();
+}
+
+function renderMatchControls() {
+  const controls = document.querySelector("#match-controls");
+  const restartButton = document.querySelector("#restart-game-button");
+  const surrenderButton = document.querySelector("#surrender-button");
+  const restartStatus = document.querySelector("#restart-status");
+  const online = gameMode === "host" || gameMode === "guest";
+  controls.hidden = !gameStarted;
+  surrenderButton.hidden = gameMode === "local";
+  restartButton.disabled = gameMode === "local" && !state.gameOver;
+  restartButton.textContent = online
+    ? restartVotes[playerColor] ? "Cancel restart vote" : "Request restart"
+    : gameMode === "local" && !state.gameOver ? "Restart after game" : "Restart game";
+  surrenderButton.disabled = state.gameOver;
+  restartStatus.textContent = online && (restartVotes.w || restartVotes.b)
+    ? `${restartVotes.w ? "White" : ""}${restartVotes.w && restartVotes.b ? " and " : ""}${restartVotes.b ? "Black" : ""} ${restartVotes.w && restartVotes.b ? "agreed to restart." : "voted to restart. Waiting for the other player."}`
+    : online
+      ? "Restarting an online game requires both players to agree."
+      : "";
 }
 
 function escapeHtml(text) {
@@ -739,6 +771,7 @@ function syncEditedProfile(color) {
 
 function beginPreparedGame() {
   if (gameMode === "guest" || !lobby.w.ready || !lobby.b.ready || gameStarted) return;
+  clearRestartVotes();
   state = freshState(
     { w: lobby.w.options, b: lobby.b.options },
     currentPlayers()
@@ -759,12 +792,108 @@ function beginPreparedGame() {
   }
 }
 
+function clearRestartVotes() {
+  restartVotes = { w: false, b: false };
+  restartVoteVersion = null;
+}
+
+function sendRestartStatus() {
+  if (gameMode === "host" && dataConnection && dataConnection.open) {
+    dataConnection.send({
+      type: "restart-status",
+      version: state.history.length,
+      votes: { ...restartVotes }
+    });
+  }
+}
+
+function restartCurrentGame() {
+  lobby.w.ready = true;
+  lobby.b.ready = true;
+  state = freshState({ w: lobby.w.options, b: lobby.b.options }, currentPlayers());
+  gameStarted = true;
+  pendingPromotion = null;
+  remoteMovePending = false;
+  clearRestartVotes();
+  document.querySelector("#setup-card").hidden = true;
+  updateGameStatus();
+  render();
+  if (gameMode === "host" && dataConnection && dataConnection.open) {
+    dataConnection.send({ type: "restart", state: roomSnapshot() });
+    setRoomStatus("Both players agreed. The game has restarted.", "connected");
+  } else if (gameMode === "bot") {
+    setRoomStatus("New game against Rift Bot. Good luck!", "connected");
+    if (state.turn !== playerColor) scheduleBotMove();
+  } else {
+    setRoomStatus("New game started.", "connected");
+  }
+}
+
+function requestRestart() {
+  if (!gameStarted) return;
+  if (gameMode === "local" && !state.gameOver) {
+    setRoomStatus("A local game can be restarted after it ends.", "waiting");
+    return;
+  }
+  if (gameMode === "local" || gameMode === "bot") {
+    restartCurrentGame();
+    return;
+  }
+  if (!dataConnection || !dataConnection.open) {
+    setRoomStatus("Reconnect to your opponent before requesting a restart.", "error");
+    return;
+  }
+  if (gameMode === "host") {
+    if (restartVoteVersion !== state.history.length) {
+      clearRestartVotes();
+      restartVoteVersion = state.history.length;
+    }
+    restartVotes.w = !restartVotes.w;
+    sendRestartStatus();
+    renderMatchControls();
+    if (restartVotes.w && restartVotes.b) restartCurrentGame();
+    else setRoomStatus(restartVotes.w
+      ? "Restart requested. Waiting for the other player to agree."
+      : "Restart request withdrawn.", "waiting");
+    return;
+  }
+  restartVotes.b = !restartVotes.b;
+  dataConnection.send({
+    type: "restart-vote",
+    version: state.history.length,
+    requested: restartVotes.b
+  });
+  renderMatchControls();
+  setRoomStatus(restartVotes.b
+    ? "Restart requested. Waiting for the host to confirm."
+    : "Restart request withdrawn.", "waiting");
+}
+
+function surrenderGame() {
+  if (!gameStarted || state.gameOver) return;
+  if (gameMode === "guest") {
+    if (!dataConnection || !dataConnection.open) {
+      setRoomStatus("Reconnect to your opponent before surrendering.", "error");
+      return;
+    }
+    dataConnection.send({ type: "surrender", version: state.history.length });
+    setRoomStatus("Surrender sent. Waiting for the host to confirm.", "waiting");
+    return;
+  }
+  state.result = { type: "surrender", loser: playerColor };
+  updateGameStatus();
+  render();
+  if (gameMode === "host") sendRoomState();
+  setRoomStatus("You surrendered. The game is over.", "connected");
+}
+
 function startBotGame() {
   const start = async () => {
     if (activeRoomId) await stopOnlineRoom();
     if (botTurnTimer) window.clearTimeout(botTurnTimer);
     botTurnTimer = null;
     gameMode = "bot";
+    clearRestartVotes();
     playerColor = document.querySelector("#human-color").value;
     const botColor = opposite(playerColor);
     const humanProfile = readProfile(playerColor);
@@ -950,9 +1079,12 @@ function lockInPlayer(color) {
 document.querySelector("#white-ready-button").addEventListener("click", () => lockInPlayer("w"));
 document.querySelector("#black-ready-button").addEventListener("click", () => lockInPlayer("b"));
 document.querySelector("#start-bot-button").addEventListener("click", startBotGame);
+document.querySelector("#restart-game-button").addEventListener("click", requestRestart);
+document.querySelector("#surrender-button").addEventListener("click", surrenderGame);
 document.querySelector("#new-game-button").addEventListener("click", async () => {
   if (botTurnTimer) window.clearTimeout(botTurnTimer);
   botTurnTimer = null;
+  clearRestartVotes();
   const leftRoom = await stopOnlineRoom();
   gameMode = "local";
   playerColor = "w";
@@ -1408,6 +1540,8 @@ function validRemoteState(remoteState) {
     ["w", "b"].includes(remoteState.turn) &&
     Array.isArray(remoteState.history) && remoteState.history.length <= 10000 &&
     remoteState.history.every(validHistory) &&
+    (remoteState.result === undefined || remoteState.result === null ||
+      (remoteState.result.type === "surrender" && ["w", "b"].includes(remoteState.result.loser))) &&
     remoteState.players && ["w", "b"].every(color =>
       remoteState.players[color] && typeof remoteState.players[color].name === "string" &&
       remoteState.players[color].name.length > 0 && remoteState.players[color].name.length <= 24) &&
@@ -1552,6 +1686,30 @@ async function receiveRoomData(connection, message, senderId) {
       return;
     }
     if (senderId !== connection.remoteUserId) return;
+    if (message.type === "surrender" && gameStarted && !state.gameOver &&
+        message.version === state.history.length) {
+      state.result = { type: "surrender", loser: "b" };
+      updateGameStatus();
+      render();
+      sendRoomState();
+      setRoomStatus(`${lobby.b.name} surrendered. The game is over.`, "connected");
+      return;
+    }
+    if (message.type === "restart-vote" && gameStarted &&
+        message.version === state.history.length && typeof message.requested === "boolean") {
+      if (restartVoteVersion !== state.history.length) {
+        clearRestartVotes();
+        restartVoteVersion = state.history.length;
+      }
+      restartVotes.b = message.requested;
+      sendRestartStatus();
+      renderMatchControls();
+      if (restartVotes.w && restartVotes.b) restartCurrentGame();
+      else setRoomStatus(restartVotes.b
+        ? `${lobby.b.name} agreed to restart.`
+        : `${lobby.b.name} withdrew the restart request.`, "waiting");
+      return;
+    }
     if (message.type === "join") {
       if (gameStarted) connection.send({ type: "start", state: roomSnapshot() });
       else sendLobby();
@@ -1588,6 +1746,29 @@ async function receiveRoomData(connection, message, senderId) {
   }
 
   if (gameMode === "guest" && senderId !== connection.remoteUserId) return;
+  if (gameMode === "guest" && message.type === "restart-status" &&
+      Number.isInteger(message.version) && message.version === state.history.length &&
+      message.votes && typeof message.votes.w === "boolean" &&
+      typeof message.votes.b === "boolean") {
+    restartVotes = { ...message.votes };
+    restartVoteVersion = message.version;
+    renderMatchControls();
+    return;
+  }
+  if (gameMode === "guest" && message.type === "restart" &&
+      validRemoteState(message.state)) {
+    state = { ...message.state, selected: null, legalMoves: [] };
+    gameStarted = true;
+    lobby.w = { ...lobby.w, name: state.players.w.name, ready: true };
+    lobby.b = { ...lobby.b, name: state.players.b.name, ready: true };
+    clearRestartVotes();
+    remoteMovePending = false;
+    document.querySelector("#setup-card").hidden = true;
+    updateGameStatus();
+    render();
+    setRoomStatus("The host confirmed the restart. The game has started again.", "connected");
+    return;
+  }
   if (gameMode === "guest" && message.type === "lobby" && !gameStarted &&
       message.players && validProfile(message.players.w) && validProfile(message.players.b)) {
     connection.roomAuthenticated = true;
@@ -1604,6 +1785,7 @@ async function receiveRoomData(connection, message, senderId) {
 
   if (gameMode === "guest" && message.type === "start" && validRemoteState(message.state) &&
       (!state || message.state.history.length >= state.history.length)) {
+    clearRestartVotes();
     connection.roomAuthenticated = true;
     opponentIsOnline = true;
     if (joinRetryTimer) window.clearInterval(joinRetryTimer);
@@ -1627,6 +1809,7 @@ async function receiveRoomData(connection, message, senderId) {
   if (gameMode === "guest" && message.type === "state" && gameStarted &&
       validRemoteState(message.state) &&
       (!state || message.state.history.length >= state.history.length)) {
+    if (restartVoteVersion !== message.state.history.length) clearRestartVotes();
     state = {
       ...message.state,
       selected: null,
@@ -1771,6 +1954,7 @@ async function openNamedRoom(roomId) {
     return;
   }
   activeRoomId = room.id;
+  clearRestartVotes();
   activeRoomOpponentId = room.invitee_id;
   opponentIsOnline = false;
   gameMode = "host";
@@ -1824,6 +2008,7 @@ async function joinNamedRoom(roomId) {
     return;
   }
   activeRoomId = room.id;
+  clearRestartVotes();
   activeRoomOpponentId = room.host_id;
   opponentIsOnline = false;
   gameMode = "guest";

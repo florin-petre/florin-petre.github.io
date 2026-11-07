@@ -349,7 +349,7 @@ begin
   update public.game_rooms
     set message_sequence = message_sequence + 1,
         game_state = case
-          when host_id = auth.uid() and p_payload->>'type' in ('start', 'state')
+          when host_id = auth.uid() and p_payload->>'type' in ('start', 'state', 'restart')
             then p_payload->'state'
           else game_state
         end,

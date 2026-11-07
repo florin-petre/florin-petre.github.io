@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#111717">
   <title>Rift Chess</title>
-  <link rel="stylesheet" href="styles.css?v=bot-play-1">
+  <link rel="stylesheet" href="styles.css?v=restart-surrender-1">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="config.js?v=bot-play-1" defer></script>
-  <script src="script.js?v=bot-play-1" defer></script>
+  <script src="config.js?v=restart-surrender-1" defer></script>
+  <script src="script.js?v=restart-surrender-1" defer></script>
 </head>
 <body>
   <main class="app-shell">
@@ -234,6 +234,11 @@
           <button class="secondary-button" id="leave-room-button" type="button" hidden>Leave room</button>
           <button class="secondary-button" id="flip-button" type="button" aria-pressed="false">Flip board</button>
         </div>
+        <div class="match-controls" id="match-controls" hidden>
+          <button class="secondary-button" id="restart-game-button" type="button">Restart game</button>
+          <button class="secondary-button surrender-button" id="surrender-button" type="button">Surrender</button>
+          <p id="restart-status" aria-live="polite"></p>
+        </div>
 
         <details class="rules-card">
           <summary>How to play</summary>
@@ -242,6 +247,7 @@
             <li>Your outer pieces move as bishops, rooks, or knights to start.</li>
             <li>Choose a different extra power for each rift piece: Knight leap, Rook stride, or Bishop glide. Rift pieces awaken after 3 moves; their chosen power is public and surges on moves 6, 9, 12, and so on.</li>
             <li>Play against Rift Bot on Easy, Medium, or Hard. The bot uses the same legal moves and rift powers as a human player.</li>
+            <li>After a local game ends, restart it from the match controls. In online rooms, both players must agree to restart; either player may surrender during a game.</li>
             <li>Check, checkmate, castling, en passant, and pawn promotion are in play.</li>
           </ul>
         </details>
