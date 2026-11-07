@@ -125,15 +125,18 @@ button:focus-visible, a:focus-visible { outline: 2px solid #dcb875; outline-offs
 .dark-button { flex: 0 0 auto; border-color: #40382d; background: #40382d; color: #f5ead8; }
 .dark-button:hover:not(:disabled) { background: #62503c; }
 .inventory-list { display: grid; }
-.inventory-item { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-top: 1px solid #ddd3c4; }
+.inventory-category { margin: 12px 0 0; padding: 7px 0; border-bottom: 1px solid #cfc2ae; color: #806b4e; font: 9px var(--mono); letter-spacing: .07em; text-transform: uppercase; }
+.inventory-item { display: grid; grid-template-columns: 33px minmax(0, 1fr) auto; align-items: start; gap: 7px 10px; padding: 9px 0; border-top: 1px solid #ddd3c4; }
 .inventory-icon { width: 33px; height: 33px; display: grid; place-items: center; background: #e5d9c6; color: #936540; font-size: 18px; }
-.inventory-details { min-width: 0; display: grid; gap: 4px; }
+.inventory-details { min-width: 0; display: grid; gap: 4px; grid-column: 2 / -1; }
 .inventory-details b { font-size: 10px; }
 .inventory-details small { color: #83796a; font-size: 9px; }
 .inventory-details .material-demand { color: #97784f; font: 8px var(--mono); }
 .inventory-quantity { margin-left: auto; color: #827665; font: 10px var(--mono); }
 .use-button { min-height: 25px; padding: 0 10px; border: 1px solid #b8a88f; background: transparent; color: #62533e; font-size: 9px; cursor: pointer; }
 .use-button:hover { background: #e3d6c3; }
+.inventory-equip-group { display: grid; justify-items: start; gap: 4px; grid-column: 2 / -1; }
+.equipment-comparison { color: #716857; font-size: 8px; line-height: 1.5; }
 .inventory-empty { margin: 0; padding: 12px 0 2px; color: #84796b; font-size: 10px; }
 .daily-panel { padding: 19px 19px 15px; }
 .compact-heading { align-items: center; margin-bottom: 10px; }
@@ -227,6 +230,7 @@ button:focus-visible, a:focus-visible { outline: 2px solid #dcb875; outline-offs
 .building-card b, .refinement-row b { color: #554a39; font-size: 9px; }
 .building-card p { margin: 4px 0; color: #766c60; font-size: 8px; line-height: 1.5; }
 .building-card small, .refinement-row small { display: block; color: #8c7657; font: 8px/1.5 var(--mono); }
+.building-card .building-requirements { margin-top: 4px; color: #9a5c3f; }
 .building-card .small-button { min-width: 54px; }
 .homestead-tip b { color: #5d543f; font: 12px var(--display), Georgia, serif; font-weight: 400; }
 .homestead-tip p { margin: 7px 0 0; color: #776d60; font-size: 9px; line-height: 1.65; }
@@ -273,6 +277,22 @@ button:focus-visible, a:focus-visible { outline: 2px solid #dcb875; outline-offs
 .combat-stage-heading span { color: #8c7657; font: 7px var(--mono); white-space: nowrap; }
 .combat-stage-complete .combat-stage-heading span { color: #596343; }
 .combat-stage p { margin: 6px 0 0; color: #766c60; font-size: 8px; line-height: 1.55; }
+.achievements-intro { max-width: 720px; margin: -4px 0 16px; color: #776d60; font-size: 10px; line-height: 1.7; }
+.achievement-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+.achievement-card { min-width: 0; display: grid; grid-template-columns: 38px minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 12px; border: 1px solid #ded5c7; background: #f8f3eb; }
+.achievement-card.achievement-earned { border-color: #aab090; background: #eff0e5; }
+.achievement-card.achievement-finale { grid-column: 1 / -1; border-color: #b89a68; background: linear-gradient(110deg, #f3ead9, #e8dfca); }
+.achievement-emblem { width: 36px; height: 36px; display: grid; place-items: center; border: 1px solid #dfcfb7; background: #eee3d1; color: #98734b; font-size: 20px; }
+.achievement-earned .achievement-emblem { border-color: #b5b99c; background: #dfe3d1; color: #626d4a; }
+.achievement-finale .achievement-emblem { border-color: #c3a36c; background: #e8d7b6; color: #85552f; }
+.achievement-details { min-width: 0; }
+.achievement-details h3 { margin: 0; color: #554a39; font: 12px var(--display), Georgia, serif; font-weight: 400; }
+.achievement-details p { margin: 4px 0 8px; color: #766c60; font-size: 9px; line-height: 1.45; }
+.achievement-meter { height: 4px; overflow: hidden; background: #e0d7c8; }
+.achievement-meter span { display: block; height: 100%; background: #9c8057; transition: width .3s ease; }
+.achievement-earned .achievement-meter span { background: #78805b; }
+.achievement-progress { color: #87765e; font: 8px var(--mono); white-space: nowrap; }
+.achievement-earned .achievement-progress { color: #596343; }
 .combat-layout { display: grid; grid-template-columns: minmax(240px, .9fr) minmax(0, 1.3fr); gap: 17px; }
 .enemy-list { display: grid; align-content: start; gap: 9px; }
 .enemy-card { display: grid; grid-template-columns: 39px minmax(0, 1fr) auto; align-items: center; gap: 10px; min-height: 65px; padding: 9px; border: 1px solid #ded5c7; background: #f8f3eb; color: var(--ink); text-align: left; cursor: pointer; }
@@ -384,8 +404,10 @@ button:focus-visible, a:focus-visible { outline: 2px solid #dcb875; outline-offs
   .brand-star { font-size: 23px; }
   .brand strong { font-size: 10px; }
   .brand small { font-size: 7px; }
-  .main-nav { gap: 7px; margin-left: auto; }
-  .nav-link, .guide-link { font-size: 7px; }
+  .main-nav { min-width: 0; flex: 1; gap: 6px; margin-left: auto; overflow-x: auto; scrollbar-width: none; }
+  .main-nav::-webkit-scrollbar { display: none; }
+  .nav-link { flex: 0 0 auto; font-size: 7px; white-space: nowrap; }
+  .guide-link { font-size: 7px; }
   .nav-link.active::after { bottom: -25px; }
   .guide-link { display: none; }
   .ticker { height: 32px; padding: 0 4%; font-size: 9px; }
@@ -424,6 +446,8 @@ button:focus-visible, a:focus-visible { outline: 2px solid #dcb875; outline-offs
   .side-column { grid-template-columns: 1fr 1fr; align-items: start; }
   .workshop-grid { grid-template-columns: 1fr; gap: 11px; }
   .combat-path { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .achievement-grid { grid-template-columns: 1fr; }
+  .achievement-card.achievement-finale { grid-column: auto; }
   .combat-layout { grid-template-columns: 1fr; }
   .character-sheet { grid-template-columns: minmax(120px, .75fr) minmax(0, 1.25fr); gap: 8px; }
   .character-art { min-height: 250px; }

@@ -20,6 +20,7 @@
         <button class="nav-link" id="inventory-tab" type="button" role="tab" aria-selected="false" aria-controls="inventory-panel" data-tab="inventory">Inventory &amp; craft</button>
         <button class="nav-link" id="homestead-tab" type="button" role="tab" aria-selected="false" aria-controls="homestead-panel" data-tab="homestead">Homestead &amp; story</button>
         <button class="nav-link" id="combat-tab" type="button" role="tab" aria-selected="false" aria-controls="combat-panel" data-tab="combat">Combat</button>
+        <button class="nav-link" id="achievements-tab" type="button" role="tab" aria-selected="false" aria-controls="achievements-panel" data-tab="achievements">Achievements</button>
       </nav>
       <a class="guide-link" href="contact.html">Field guide <span aria-hidden="true">↗</span></a>
     </header>
@@ -189,17 +190,17 @@
             <div class="set-bonuses" id="set-bonuses" aria-label="Equipment set bonuses"></div>
           </section>
           <section class="workshop-section" aria-labelledby="bag-title">
-            <div class="subsection-title"><h3 id="bag-title">Your satchel</h3><span>STACKS AUTOMATICALLY</span></div>
+            <div class="subsection-title"><h3 id="bag-title">Your satchel</h3><span>GROUPED BY EQUIPMENT SLOT</span></div>
             <div class="inventory-list" id="inventory-list" aria-live="polite"></div>
           </section>
           <section class="workshop-section recipe-section" aria-labelledby="recipes-title">
             <div class="subsection-title"><h3 id="recipes-title">The workbench</h3><span>FIELD CRAFTING</span></div>
-            <p class="workshop-intro">Turn common finds into dependable equipment. Fine gear takes patience and a bit of luck.</p>
+            <p class="workshop-intro">Gear comes from crafting or field finds, not the Outfitters. Each item shows the slot it fits and exactly what changes compared with your current gear.</p>
             <div class="recipe-list" id="recipe-list"></div>
           </section>
           <section class="workshop-section shop-section" aria-labelledby="shop-title">
-            <div class="subsection-title"><h3 id="shop-title">Dry Creek Outfitters</h3><span>STOCK CHANGES WITH YOUR LEVEL</span></div>
-            <p class="workshop-intro">Spend your wages on supplies and better kit. New stock arrives as your reputation grows.</p>
+            <div class="subsection-title"><h3 id="shop-title">Dry Creek Outfitters</h3><span>FOOD &amp; FIELD SUPPLIES</span></div>
+            <p class="workshop-intro">The Outfitters sell only trail biscuits and healing tonics. Weapons and armor must be crafted at the workbench or earned on the trail.</p>
             <div class="shop-list" id="shop-list"></div>
           </section>
           <section class="workshop-section goals-section" aria-labelledby="goals-title">
@@ -261,7 +262,7 @@
           <div><p class="eyebrow dark-eyebrow">The wild country bites back</p><h2>Frontier encounters</h2></div>
           <span class="board-count">EQUIPMENT POWER <b id="battle-power">0</b></span>
         </div>
-        <p class="combat-intro">Combat is required to uncover Vane's plot and finish the campaign. Each fight has a purpose: defeat the coyote and outlaw to track Ironjaw; his ironheart unlocks the forge and railsteel needed for the Railbreaker rifle; then use it to face Vane. Weapon damage sets your hit range, while aim, armor, and dodge help you survive.</p>
+        <p class="combat-intro">Combat drives the story beyond Vane. Each new chapter reveals materials and crafting work for the weapon needed to face the next enemy: Ironjaw's ironheart unlocks the Railbreaker, Cinderback's heartstone powers the precision foundry, and the Rail Warden's badge opens the Blackglass works. New foes stay locked until their chapter and required weapon are ready.</p>
         <section class="combat-route" aria-labelledby="combat-route-title">
           <div class="subsection-title"><h3 id="combat-route-title">Why fight? · The trail to Vane</h3><span>CAMPAIGN-CRITICAL</span></div>
           <div class="combat-path" id="combat-path"></div>
@@ -278,6 +279,15 @@
             <ol class="battle-log" id="battle-log" aria-live="polite"><li>Wind stirs the sagebrush.</li></ol>
           </section>
         </div>
+      </section>
+
+      <section class="tab-panel panel achievements-panel" id="achievements-panel" role="tabpanel" aria-labelledby="achievements-tab" data-panel="achievements" hidden>
+        <div class="section-topline">
+          <div><p class="eyebrow dark-eyebrow">A ledger of a life well lived</p><h2>Frontier achievements</h2></div>
+          <span class="board-count" id="achievement-count">0 / 0 EARNED</span>
+        </div>
+        <p class="achievements-intro">Every mark tracks real progress across the jobs, story, workshops, homestead, and frontier fights. The final honor is reserved for a truly finished ledger: every chapter, upgrade, craft, job, refinement, and enemy.</p>
+        <div class="achievement-grid" id="achievement-list" aria-live="polite"></div>
       </section>
 
       <footer class="game-footer"><span>✳ &nbsp; DUST &amp; DAYBREAK</span><span>A little life on the frontier. Made for wandering.</span><a href="contact.html">How to play ↗</a></footer>
