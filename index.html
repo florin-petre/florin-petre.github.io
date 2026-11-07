@@ -15,10 +15,10 @@
         <span class="brand-star" aria-hidden="true">✳</span>
         <span><strong>DUST <i>&amp;</i> DAYBREAK</strong><small>A FRONTIER LIFE</small></span>
       </a>
-      <nav class="main-nav" aria-label="Main navigation">
-        <a class="nav-link active" href="#town">The town</a>
-        <a class="nav-link" href="#work">Job board</a>
-        <a class="nav-link" href="#satchel">Satchel</a>
+      <nav class="main-nav" role="tablist" aria-label="Game areas">
+        <button class="nav-link active" id="town-tab" type="button" role="tab" aria-selected="true" aria-controls="town-panel" data-tab="town">The town</button>
+        <button class="nav-link" id="inventory-tab" type="button" role="tab" aria-selected="false" aria-controls="inventory-panel" data-tab="inventory">Inventory &amp; craft</button>
+        <button class="nav-link" id="combat-tab" type="button" role="tab" aria-selected="false" aria-controls="combat-panel" data-tab="combat">Combat</button>
       </nav>
       <a class="guide-link" href="contact.html">Field guide <span aria-hidden="true">↗</span></a>
     </header>
@@ -101,7 +101,7 @@
         <div class="wallet"><span aria-hidden="true">$</span><div><small>POCKET MONEY</small><strong id="money-value">$85</strong></div></div>
       </section>
 
-      <div class="content-grid">
+      <div class="content-grid tab-panel" id="town-panel" role="tabpanel" aria-labelledby="town-tab" data-panel="town">
         <div class="main-column">
           <section class="panel job-panel" id="work" aria-labelledby="jobs-title">
             <div class="section-topline">
@@ -111,21 +111,21 @@
             <div class="job-list" id="job-list">
               <article class="job-card" data-job-card="mail">
                 <div class="job-icon icon-mail" aria-hidden="true">✉</div>
-                <div class="job-info"><span class="job-category">DELIVERY · EASY</span><h3>Letters for Red Mesa</h3><p>Ride the ridge trail and bring the postmaster's reply back safe.</p><div class="job-tags"><span>◷ 1 hour</span><span>✦ +18 XP</span><span>⚡ 12 energy</span></div></div>
+                <div class="job-info"><span class="job-category">DELIVERY · EASY</span><h3>Letters for Red Mesa</h3><p>Ride the ridge trail and bring the postmaster's reply back safe.</p><div class="job-tags"><span>◷ 1 min</span><span>✦ +18 XP</span><span>⚡ 12 energy</span></div></div>
                 <div class="job-reward"><strong>$24</strong><small>+ a little respect</small><button class="small-button" type="button" data-job="mail">Take the job <span aria-hidden="true">→</span></button></div>
               </article>
               <article class="job-card" data-job-card="ranch">
                 <div class="job-icon icon-ranch" aria-hidden="true">✳</div>
-                <div class="job-info"><span class="job-category">RANCH HAND · STEADY</span><h3>Fence-line trouble</h3><p>Old Man Bell says coyotes found a gap in the south pasture.</p><div class="job-tags"><span>◷ 2 hours</span><span>✦ +28 XP</span><span>⚡ 20 energy</span></div></div>
+                <div class="job-info"><span class="job-category">RANCH HAND · STEADY</span><h3>Fence-line trouble</h3><p>Old Man Bell says coyotes found a gap in the south pasture.</p><div class="job-tags"><span>◷ 1 min</span><span>✦ +28 XP</span><span>⚡ 20 energy</span></div></div>
                 <div class="job-reward"><strong>$39</strong><small>+ a chance at a find</small><button class="small-button" type="button" data-job="ranch">Take the job <span aria-hidden="true">→</span></button></div>
               </article>
               <article class="job-card" data-job-card="saloon">
                 <div class="job-icon icon-saloon" aria-hidden="true">♠</div>
-                <div class="job-info"><span class="job-category">TOWN DUTY · LIVELY</span><h3>Last call at the Lantern</h3><p>Help Ada close up before the piano player starts another round.</p><div class="job-tags"><span>◷ 3 hours</span><span>✦ +36 XP</span><span>⚡ 26 energy</span></div></div>
+                <div class="job-info"><span class="job-category">TOWN DUTY · LIVELY</span><h3>Last call at the Lantern</h3><p>Help Ada close up before the piano player starts another round.</p><div class="job-tags"><span>◷ 1 min</span><span>✦ +36 XP</span><span>⚡ 26 energy</span></div></div>
                 <div class="job-reward"><strong>$52</strong><small>+ a chance at a find</small><button class="small-button" type="button" data-job="saloon">Take the job <span aria-hidden="true">→</span></button></div>
               </article>
             </div>
-            <p class="panel-footnote"><span aria-hidden="true">✳</span> A full day's work earns a bonus from the town clerk.</p>
+            <p class="panel-footnote"><span aria-hidden="true">✳</span> One-minute shifts · 80% materials · 15% supplies · 3% rare charm · 2% fine gear.</p>
           </section>
 
           <section class="panel trail-panel" aria-labelledby="trail-title">
@@ -144,13 +144,6 @@
             </div>
           </section>
 
-          <section class="panel satchel-panel" id="satchel" aria-labelledby="satchel-title">
-            <div class="section-topline">
-              <div><p class="eyebrow dark-eyebrow">Everything you own, more or less</p><h2 id="satchel-title">Your satchel</h2></div>
-              <span class="board-count" id="inventory-count">1 ITEM</span>
-            </div>
-            <div class="inventory-list" id="inventory-list" aria-live="polite"></div>
-          </section>
         </div>
 
         <aside class="side-column">
@@ -177,6 +170,52 @@
           <div class="aside-note"><span aria-hidden="true">“</span><p>Nothing out here comes easy. That's what makes it worth having.</p><small>— ADA, THE LANTERN</small></div>
         </aside>
       </div>
+
+      <section class="tab-panel panel inventory-panel" id="inventory-panel" role="tabpanel" aria-labelledby="inventory-tab" data-panel="inventory" hidden>
+        <div class="section-topline">
+          <div><p class="eyebrow dark-eyebrow">What you've gathered, made, and earned</p><h2>Inventory &amp; workshop</h2></div>
+          <span class="board-count" id="inventory-count">0 ITEMS</span>
+        </div>
+        <div class="workshop-grid">
+          <section class="workshop-section" aria-labelledby="gear-title">
+            <div class="subsection-title"><h3 id="gear-title">On your person</h3><span id="combat-power">POWER 0</span></div>
+            <div class="equipment-slots" id="equipment-slots" aria-live="polite"></div>
+          </section>
+          <section class="workshop-section" aria-labelledby="bag-title">
+            <div class="subsection-title"><h3 id="bag-title">Your satchel</h3><span>STACKS AUTOMATICALLY</span></div>
+            <div class="inventory-list" id="inventory-list" aria-live="polite"></div>
+          </section>
+          <section class="workshop-section recipe-section" aria-labelledby="recipes-title">
+            <div class="subsection-title"><h3 id="recipes-title">The workbench</h3><span>FIELD CRAFTING</span></div>
+            <p class="workshop-intro">Turn common finds into dependable equipment. Fine gear takes patience and a bit of luck.</p>
+            <div class="recipe-list" id="recipe-list"></div>
+          </section>
+          <section class="workshop-section goals-section" aria-labelledby="goals-title">
+            <div class="subsection-title"><h3 id="goals-title">Frontier ledger</h3><span>LONGER GOALS</span></div>
+            <div class="mission-list" id="mission-list"></div>
+          </section>
+        </div>
+      </section>
+
+      <section class="tab-panel panel combat-panel" id="combat-panel" role="tabpanel" aria-labelledby="combat-tab" data-panel="combat" hidden>
+        <div class="section-topline">
+          <div><p class="eyebrow dark-eyebrow">The wild country bites back</p><h2>Frontier encounters</h2></div>
+          <span class="board-count">EQUIPMENT POWER <b id="battle-power">0</b></span>
+        </div>
+        <p class="combat-intro">Choose your opponent. Each round you trade blows; a better weapon hits harder and armor softens the return. You can retreat between rounds.</p>
+        <div class="combat-layout">
+          <div class="enemy-list" id="enemy-list"></div>
+          <section class="battle-card" aria-labelledby="battle-title">
+            <div class="battle-header"><span class="eyebrow dark-eyebrow">THE DUSTY GULCH</span><span class="enemy-state" id="battle-state">NO ENCOUNTER</span></div>
+            <h3 id="battle-title">The trail is quiet.</h3>
+            <p id="battle-description">Pick a creature on the left to begin. Bosses require proper gear and a steady hand.</p>
+            <div class="battle-health"><div><span id="enemy-health-label">ENEMY</span><b id="enemy-health-value">—</b></div><div class="meter"><span id="enemy-health-bar"></span></div></div>
+            <div class="battle-health"><div><span>YOUR HEALTH</span><b id="battle-player-health">100 / 100</b></div><div class="meter"><span class="health-fill" id="battle-health-bar"></span></div></div>
+            <div class="battle-actions"><button class="primary-button dark-button" id="attack-button" type="button" disabled>Strike</button><button class="retreat-button" id="retreat-button" type="button" disabled>Retreat</button></div>
+            <ol class="battle-log" id="battle-log" aria-live="polite"><li>Wind stirs the sagebrush.</li></ol>
+          </section>
+        </div>
+      </section>
 
       <footer class="game-footer"><span>✳ &nbsp; DUST &amp; DAYBREAK</span><span>A little life on the frontier. Made for wandering.</span><a href="contact.html">How to play ↗</a></footer>
     </main>

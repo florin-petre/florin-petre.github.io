@@ -32,6 +32,8 @@ button:focus-visible, a:focus-visible { outline: 2px solid #dcb875; outline-offs
 .brand small { display: block; margin-top: 5px; color: #9b9080; font: 9px var(--mono); letter-spacing: .16em; }
 .main-nav { display: flex; align-items: center; gap: 33px; height: 100%; }
 .nav-link, .guide-link { color: #c4b8a5; font-size: 11px; transition: color .18s ease; }
+.nav-link { padding: 0; border: 0; background: transparent; cursor: pointer; }
+.nav-link[aria-selected="false"] { color: #a99c89; }
 .nav-link:hover, .guide-link:hover { color: #f1dfbf; }
 .nav-link.active { position: relative; color: #f2e8d7; }
 .nav-link.active::after { position: absolute; right: 0; bottom: -30px; left: 0; height: 2px; background: var(--gold); content: ""; }
@@ -178,6 +180,81 @@ button:focus-visible, a:focus-visible { outline: 2px solid #dcb875; outline-offs
 .game-footer a { margin-left: auto; color: #c8b18b; }
 .toast { position: fixed; right: 24px; bottom: 23px; z-index: 3; max-width: min(370px, calc(100vw - 32px)); padding: 12px 16px; border: 1px solid #806c4f; background: #302a22; color: #f2e7d4; font-size: 11px; line-height: 1.5; opacity: 0; pointer-events: none; transform: translateY(8px); transition: opacity .2s ease, transform .2s ease; }
 .toast.visible { opacity: 1; transform: translateY(0); }
+[hidden] { display: none !important; }
+.tab-panel { margin-top: 20px; }
+.job-card { position: relative; overflow: hidden; }
+.job-card.job-active { border-color: #b38b57; }
+.job-card.job-active::after { position: absolute; bottom: 0; left: 0; width: var(--job-progress, 0%); height: 3px; background: #b68951; content: ""; transition: width .25s linear; }
+.job-card .small-button:disabled { opacity: .8; }
+.subsection-title { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; padding-bottom: 9px; border-bottom: 1px solid #ddd3c4; }
+.subsection-title h3 { margin: 0; font: 16px var(--display), Georgia, serif; font-weight: 400; }
+.subsection-title > span { color: #867965; font: 8px var(--mono); letter-spacing: .06em; text-align: right; }
+.workshop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.workshop-section { min-width: 0; padding: 15px; border: 1px solid #ddd3c4; background: #f7f2e9; }
+.equipment-slots { display: grid; gap: 7px; }
+.equipment-slot { display: grid; grid-template-columns: 55px minmax(0, 1fr) 32px; align-items: center; gap: 8px; padding: 9px; border: 1px solid #ded5c7; background: #fffaf1; }
+.slot-label { color: #927454; font: 8px var(--mono); text-transform: uppercase; }
+.equipment-slot b { overflow: hidden; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.slot-power { color: #6a734c; font: 10px var(--mono); text-align: right; }
+.inventory-item { min-width: 0; }
+.inventory-item .use-button { flex: 0 0 auto; white-space: nowrap; }
+.inventory-item .use-button:disabled { opacity: .55; cursor: default; }
+.rarity-uncommon .inventory-icon { background: #e4e6d9; color: #65704b; }
+.rarity-rare .inventory-icon { background: #e7deca; color: #a57937; }
+.rarity-epic .inventory-icon { background: #e8d8d1; color: #965340; }
+.rarity-uncommon .inventory-details b { color: #5f6b47; }
+.rarity-rare .inventory-details b { color: #97702f; }
+.rarity-epic .inventory-details b { color: #92533f; }
+.workshop-intro { margin: 0 0 12px; color: #776d60; font-size: 10px; line-height: 1.6; }
+.recipe-list, .mission-list { display: grid; gap: 8px; }
+.recipe-card { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px; border: 1px solid #ded5c7; background: #fffaf1; }
+.recipe-card > div { min-width: 0; }
+.recipe-card b { font-size: 10px; }
+.recipe-card p { margin: 4px 0; color: #766c60; font-size: 9px; }
+.recipe-card small { display: block; color: #8c7657; font: 8px/1.6 var(--mono); }
+.craft-button { flex: 0 0 auto; min-width: 61px; }
+.craft-button:disabled { opacity: .48; cursor: not-allowed; }
+.mission-card { padding: 10px; border: 1px solid #ded5c7; background: #fffaf1; }
+.mission-card.mission-complete { border-color: #aab090; background: #eff0e5; }
+.mission-top { display: flex; justify-content: space-between; gap: 8px; }
+.mission-top b { font-size: 10px; }
+.mission-top span { color: #8b785c; font: 8px var(--mono); }
+.mission-card p { margin: 4px 0 7px; color: #766c60; font-size: 9px; }
+.mission-card > small { color: #8c7657; font: 8px var(--mono); }
+.mission-meter { height: 3px; margin-bottom: 6px; background: #e0d7c8; }
+.mission-meter span { display: block; height: 100%; background: #878b61; transition: width .3s ease; }
+.combat-intro { max-width: 760px; margin: -4px 0 17px; color: #776d60; font-size: 10px; line-height: 1.7; }
+.combat-layout { display: grid; grid-template-columns: minmax(240px, .9fr) minmax(0, 1.3fr); gap: 17px; }
+.enemy-list { display: grid; align-content: start; gap: 9px; }
+.enemy-card { display: grid; grid-template-columns: 39px minmax(0, 1fr) auto; align-items: center; gap: 10px; min-height: 65px; padding: 9px; border: 1px solid #ded5c7; background: #f8f3eb; color: var(--ink); text-align: left; cursor: pointer; }
+.enemy-card:hover:not(:disabled) { border-color: #b99563; background: #f4ecde; }
+.enemy-card:disabled { opacity: .6; cursor: not-allowed; }
+.enemy-card.boss-card { border-color: #b89a84; }
+.enemy-icon { width: 36px; height: 36px; display: grid; place-items: center; background: #e9dfcf; color: #8e6541; font-size: 20px; }
+.boss-card .enemy-icon { background: #e9d8d1; color: #93523f; }
+.enemy-copy { min-width: 0; }
+.enemy-copy b, .enemy-copy small { display: block; }
+.enemy-copy b { font: 11px var(--display), Georgia, serif; font-weight: 400; }
+.enemy-copy small { margin-top: 5px; color: #887b69; font: 8px var(--mono); }
+.enemy-arrow { color: #8d744f; font: 8px var(--mono); white-space: nowrap; }
+.battle-card { min-width: 0; padding: 17px; border: 1px solid #bba98f; background: #f8f3eb; }
+.battle-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.battle-header .eyebrow { margin: 0; }
+.enemy-state { color: #8e6043; font: 8px var(--mono); }
+.battle-card h3 { margin: 11px 0 5px; font: 19px var(--display), Georgia, serif; font-weight: 400; }
+.battle-card > p { min-height: 32px; margin: 0 0 17px; color: #776d60; font-size: 10px; line-height: 1.6; }
+.battle-health { margin-top: 12px; }
+.battle-health > div:first-child { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 6px; color: #867965; font: 8px var(--mono); }
+.battle-health > div:first-child b { color: #514739; font-weight: 400; }
+#enemy-health-bar { background: #a65d43; }
+#battle-health-bar { background: #8d7151; }
+.battle-actions { display: flex; gap: 8px; margin-top: 15px; }
+.battle-actions .primary-button { min-width: 110px; }
+.retreat-button { padding: 0 14px; border: 1px solid #c9bba5; background: transparent; color: #6f6251; font-size: 10px; cursor: pointer; }
+.retreat-button:hover:not(:disabled) { background: #eee5d8; }
+.retreat-button:disabled { opacity: .45; cursor: not-allowed; }
+.battle-log { display: grid; gap: 6px; max-height: 120px; overflow: auto; margin: 14px 0 0; padding: 11px 0 0; border-top: 1px solid #ded5c7; color: #766c60; font-size: 9px; line-height: 1.5; list-style: none; }
+.battle-log li::before { margin-right: 7px; color: #ac8552; content: "✳"; }
 
 .guide-page { min-height: 100vh; }
 .guide-shell { width: min(960px, 90%); margin: 50px auto; }
@@ -216,14 +293,15 @@ button:focus-visible, a:focus-visible { outline: 2px solid #dcb875; outline-offs
   .brand-star { font-size: 23px; }
   .brand strong { font-size: 10px; }
   .brand small { font-size: 7px; }
-  .main-nav { gap: 13px; margin-left: auto; }
-  .nav-link, .guide-link { font-size: 9px; }
+  .main-nav { gap: 10px; margin-left: auto; }
+  .nav-link, .guide-link { font-size: 8px; }
   .nav-link.active::after { bottom: -25px; }
   .guide-link { display: none; }
   .ticker { height: 32px; padding: 0 4%; font-size: 9px; }
   .ticker b { font-size: 8px; }
   .ticker-date { display: none; }
   .game-shell { width: 100%; margin-top: 0; }
+  .tab-panel { margin-top: 13px; }
   .landscape { height: 290px; }
   .landscape-art { width: 150%; max-width: none; transform: translateX(-20%); }
   .landscape-copy { top: 38px; left: 6%; max-width: 78%; }
@@ -253,6 +331,8 @@ button:focus-visible, a:focus-visible { outline: 2px solid #dcb875; outline-offs
   .route-button small { font-size: 7px; }
   .trail-mark { display: none; }
   .side-column { grid-template-columns: 1fr 1fr; align-items: start; }
+  .workshop-grid { grid-template-columns: 1fr; gap: 11px; }
+  .combat-layout { grid-template-columns: 1fr; }
   .daily-panel, .journal-panel { min-height: 176px; }
   .saloon-panel { grid-column: 1; }
   .aside-note { grid-column: 2; align-self: center; }
@@ -261,8 +341,8 @@ button:focus-visible, a:focus-visible { outline: 2px solid #dcb875; outline-offs
 
 @media (max-width: 400px) {
   .brand strong { font-size: 9px; }
-  .main-nav { gap: 9px; }
-  .nav-link { font-size: 8px; }
+  .main-nav { gap: 7px; }
+  .nav-link { font-size: 7px; }
   .job-card { grid-template-columns: 29px minmax(0, 1fr) 88px; gap: 6px; padding: 8px 6px; }
   .job-icon { width: 28px; height: 28px; }
   .job-tags span:nth-child(2) { display: none; }
