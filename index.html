@@ -18,6 +18,7 @@
       <nav class="main-nav" role="tablist" aria-label="Game areas">
         <button class="nav-link active" id="town-tab" type="button" role="tab" aria-selected="true" aria-controls="town-panel" data-tab="town">The town</button>
         <button class="nav-link" id="inventory-tab" type="button" role="tab" aria-selected="false" aria-controls="inventory-panel" data-tab="inventory">Inventory &amp; craft</button>
+        <button class="nav-link" id="homestead-tab" type="button" role="tab" aria-selected="false" aria-controls="homestead-panel" data-tab="homestead">Homestead &amp; story</button>
         <button class="nav-link" id="combat-tab" type="button" role="tab" aria-selected="false" aria-controls="combat-panel" data-tab="combat">Combat</button>
       </nav>
       <a class="guide-link" href="contact.html">Field guide <span aria-hidden="true">↗</span></a>
@@ -208,12 +209,63 @@
         </div>
       </section>
 
+      <section class="tab-panel panel homestead-panel" id="homestead-panel" role="tabpanel" aria-labelledby="homestead-tab" data-panel="homestead" hidden>
+        <div class="section-topline">
+          <div><p class="eyebrow dark-eyebrow">Mara Quinn's claim · Dry Creek territory</p><h2>The Bell Homestead</h2></div>
+          <span class="board-count" id="homestead-status">No deed yet</span>
+        </div>
+        <p class="homestead-intro">Build a home that works for you. Buy construction supplies at the Builder's Yard, use your land wisely, and turn raw finds into the materials needed for fine gear.</p>
+        <section class="story-section" aria-labelledby="story-title">
+          <div class="subsection-title"><h3 id="story-title">The Vane Ledger</h3><span id="story-count">CHAPTER 1 OF 10</span></div>
+          <div id="story-content"></div>
+        </section>
+        <div class="homestead-grid">
+          <div class="homestead-column">
+            <section class="workshop-section" aria-labelledby="home-title">
+              <div class="subsection-title"><h3 id="home-title">Your home</h3><span id="homestead-capacity">0 / 0 PLOTS</span></div>
+              <div class="home-benefits" id="homestead-buffs"></div>
+              <button class="small-button claim-land-button" id="claim-land" type="button">Sign the Bell deed · Free</button>
+              <p class="home-cost" id="cabin-cost"></p>
+              <button class="small-button" id="upgrade-cabin" type="button">Build the cabin</button>
+            </section>
+            <section class="workshop-section" aria-labelledby="builder-title">
+              <div class="subsection-title"><h3 id="builder-title">Builder's Yard</h3><span>CONSTRUCTION SUPPLIES</span></div>
+              <p class="workshop-intro">The lumber foreman keeps planks, fieldstone, and nails in stock.</p>
+              <div class="builder-stock" id="builder-stock"></div>
+            </section>
+            <section class="workshop-section" aria-labelledby="buildings-title">
+              <div class="subsection-title"><h3 id="buildings-title">Build on your land</h3><span>SPACE IS LIMITED</span></div>
+              <div class="building-list" id="building-list"></div>
+            </section>
+          </div>
+          <div class="homestead-column">
+            <section class="workshop-section" aria-labelledby="refinement-title">
+              <div class="subsection-title"><h3 id="refinement-title">Refining sheds</h3><span>RAW IN · FINISHED OUT</span></div>
+              <p class="workshop-intro">Smelt copper in the assay shed and cure leather in the tanning shed. Better recipes require finished materials and the right station.</p>
+              <div class="refinement-list" id="refinement-list"></div>
+            </section>
+            <section class="workshop-section" aria-labelledby="production-title">
+              <div class="subsection-title"><h3 id="production-title">Homestead harvest</h3><span>ONCE EACH MORNING</span></div>
+              <p class="workshop-intro">Gardens, woodlots, and pastures add materials to your satchel when you sleep. A more comfortable home also improves recovery and provides modest combat bonuses.</p>
+            </section>
+            <section class="workshop-section homestead-tip">
+              <b>A frontier life is built one season at a time.</b>
+              <p>The story follows Silas Vane's debt scheme from the old assay shed to the night train. Build, craft, take jobs, and explore whenever you like; campaign objectives remember what you've already accomplished.</p>
+            </section>
+          </div>
+        </div>
+      </section>
+
       <section class="tab-panel panel combat-panel" id="combat-panel" role="tabpanel" aria-labelledby="combat-tab" data-panel="combat" hidden>
         <div class="section-topline">
           <div><p class="eyebrow dark-eyebrow">The wild country bites back</p><h2>Frontier encounters</h2></div>
           <span class="board-count">EQUIPMENT POWER <b id="battle-power">0</b></span>
         </div>
-        <p class="combat-intro">Weapon damage sets your hit range. Damage bonus, aim, armor, and dodge come from equipped gear and affect every combat round. Retreat when you need to regroup.</p>
+        <p class="combat-intro">Combat is required to uncover Vane's plot and finish the campaign. Each fight has a purpose: defeat the coyote and outlaw to track Ironjaw; his ironheart unlocks the forge and railsteel needed for the Railbreaker rifle; then use it to face Vane. Weapon damage sets your hit range, while aim, armor, and dodge help you survive.</p>
+        <section class="combat-route" aria-labelledby="combat-route-title">
+          <div class="subsection-title"><h3 id="combat-route-title">Why fight? · The trail to Vane</h3><span>CAMPAIGN-CRITICAL</span></div>
+          <div class="combat-path" id="combat-path"></div>
+        </section>
         <div class="combat-layout">
           <div class="enemy-list" id="enemy-list"></div>
           <section class="battle-card" aria-labelledby="battle-title">

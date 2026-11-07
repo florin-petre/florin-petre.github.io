@@ -8,6 +8,15 @@ const materials = {
   hide: { name: "Tanned hide", shortName: "Hide", icon: "▧", detail: "Tough leather, still carrying the smell of the trail." },
   ore: { name: "Copper ore", shortName: "Copper ore", icon: "◆", detail: "A few bright veins from the red hills." },
   herbs: { name: "Wild herbs", shortName: "Herbs", icon: "✿", detail: "Bitter leaves with a knack for closing a wound." },
+  planks: { name: "Sawmill planks", shortName: "Planks", icon: "▤", detail: "Straight, kiln-dried boards sold by the builder's yard." },
+  stone: { name: "Quarried fieldstone", shortName: "Stone", icon: "◈", detail: "Heavy blocks for foundations and fireproof walls." },
+  nails: { name: "Iron nail keg", shortName: "Nails", icon: "⌁", detail: "A keg of square-cut nails, bought from the builder's yard." },
+  ingot: { name: "Copper ingot", shortName: "Copper ingot", icon: "▰", detail: "Copper ore smelted down with iron scrap." },
+  leather: { name: "Cured leather", shortName: "Leather", icon: "▧", detail: "Hide worked soft and weatherproof in the tannery." },
+  ironheart: { name: "Ironjaw's ironheart", shortName: "Ironheart", icon: "◆", detail: "A dense, ore-veined core recovered from Ironjaw. The assay shed can be rebuilt around it." },
+  temperedIngot: { name: "Tempered railsteel", shortName: "Railsteel", icon: "▰", detail: "Copper alloy tempered in the Ironheart Forge; required for a weapon that can challenge Vane." },
+  ridgebackMark: { name: "Ridgeback trail mark", shortName: "Trail mark", icon: "♧", detail: "A sign the sheriff can use to follow the coyote trail toward Ironjaw's den." },
+  freightToken: { name: "Vane freight token", shortName: "Freight token", icon: "♠", detail: "A stamped token taken from Vane's road-agent. Its rail code leads to Ironjaw's den." },
 };
 
 const gear = {
@@ -30,6 +39,8 @@ const gear = {
   "deadeye-hat": { name: "Deadeye's sightline hat", type: "hat", slot: "Hat", power: 7, damageBonus: 5, aim: 12, set: "deadeye", rarity: "rare", icon: "♧", detail: "A low crown and a wide brim help keep your eye on the mark." },
   "ironbark-hood": { name: "Ironbark scout hood", type: "hat", slot: "Hat", power: 6, armor: 5, dodge: 5, set: "ironbark", rarity: "uncommon", icon: "▤", detail: "Reinforced leather that turns brush and blows alike." },
   "ironbark-gloves": { name: "Ironbark guard gloves", type: "gloves", slot: "Gloves", power: 7, armor: 4, dodge: 6, set: "ironbark", rarity: "rare", icon: "✧", detail: "Thick hide and a firm grip; built to stay standing." },
+  "vane-signet": { name: "Vane's silver signet", type: "charm", slot: "Charm", power: 16, armor: 4, damageBonus: 7, aim: 5, rarity: "epic", icon: "✦", detail: "A heavy ring stamped with the mark of a railroad empire." },
+  "railbreaker-rifle": { name: "Railbreaker rifle", type: "weapon", slot: "Weapon", power: 26, damage: [20, 29], damageBonus: 16, aim: 10, set: "deadeye", rarity: "epic", icon: "▰", detail: "A rifle rebuilt around Ironjaw-tempered railsteel. The only weapon sturdy enough to face Silas Vane." },
 };
 
 const gearSets = {
@@ -45,7 +56,7 @@ const gearSets = {
     pieceThreshold: 2,
     twoPiece: { damageBonus: 8, aim: 6 },
     fullSet: { damageBonus: 12, aim: 10 },
-    slots: ["iron-peacemaker", "ranger-duster", "longshot-rifle", "scattergun", "gunslingers-gloves", "deadeye-hat"],
+    slots: ["iron-peacemaker", "ranger-duster", "longshot-rifle", "scattergun", "railbreaker-rifle", "gunslingers-gloves", "deadeye-hat"],
   },
   ironbark: {
     name: "Ironbark set",
@@ -57,19 +68,22 @@ const gearSets = {
 };
 
 const recipes = [
-  { id: "iron-peacemaker", name: "Iron Peacemaker", description: "A dependable upgrade for the gulch.", cost: 25, level: 1, materials: { scrap: 5, timber: 2 }, output: "iron-peacemaker" },
+  { id: "iron-peacemaker", name: "Deadeye Peacemaker", description: "A dependable Deadeye-set revolver with improved damage and aim.", cost: 25, level: 1, materials: { scrap: 5, timber: 2 }, output: "iron-peacemaker" },
   { id: "redhide-vest", name: "Redhide vest", description: "Protection against claws and bad decisions.", cost: 30, level: 1, materials: { hide: 4, scrap: 2 }, output: "redhide-vest" },
   { id: "healing-tonic", name: "Frontier tonic", description: "Restore 35 health during a fight.", cost: 12, level: 1, materials: { herbs: 3 }, output: "healing-tonic" },
   { id: "scout-hat", name: "Trailblazer's broadbrim", description: "A practical all-around set piece.", cost: 48, level: 2, materials: { hide: 3, timber: 3, ore: 1 }, output: "scout-hat" },
   { id: "trail-boots", name: "Ironbark trail boots", description: "Armor and dodge for the Ironbark set.", cost: 55, level: 3, materials: { hide: 5, scrap: 3 }, output: "trail-boots" },
-  { id: "ranger-duster", name: "Deadeye's long duster", description: "Damage and aim for the Deadeye set.", cost: 90, level: 4, materials: { hide: 8, ore: 4, scrap: 5 }, output: "ranger-duster" },
-  { id: "gunslingers-gloves", name: "Deadeye draw gloves", description: "Quicker hands; steadier shots.", cost: 115, level: 5, materials: { hide: 7, ore: 5, timber: 4 }, output: "gunslingers-gloves" },
-  { id: "longshot-rifle", name: "Deadeye Longshot", description: "A long-range upgrade for a sure eye.", cost: 160, level: 6, materials: { ore: 10, scrap: 8, timber: 6 }, output: "longshot-rifle" },
+  { id: "ranger-duster", name: "Deadeye's long duster", description: "Damage and aim for the Deadeye set. Requires cured leather and smelted copper.", cost: 90, level: 4, materials: { leather: 4, ingot: 2, scrap: 3 }, stations: ["tannery", "smelter"], output: "ranger-duster" },
+  { id: "gunslingers-gloves", name: "Deadeye draw gloves", description: "Quicker hands; steadier shots, sewn from cured leather.", cost: 115, level: 5, materials: { leather: 3, ore: 3, timber: 4 }, stations: ["tannery"], output: "gunslingers-gloves" },
+  { id: "longshot-rifle", name: "Deadeye Longshot", description: "A long-range upgrade built around smelted copper.", cost: 160, level: 6, materials: { ingot: 5, scrap: 8, timber: 6 }, stations: ["smelter"], output: "longshot-rifle" },
   { id: "trailblazer-boots", name: "Trailblazer's riding boots", description: "Balanced protection for the Trailblazer set.", cost: 105, level: 3, materials: { hide: 5, timber: 3, scrap: 2 }, output: "trailblazer-boots" },
   { id: "trailblazer-gloves", name: "Trailblazer's work gloves", description: "A balanced set piece for any kind of work.", cost: 115, level: 4, materials: { hide: 5, timber: 4, scrap: 2 }, output: "trailblazer-gloves" },
-  { id: "deadeye-hat", name: "Deadeye's sightline hat", description: "A precise hat for the Deadeye set.", cost: 150, level: 5, materials: { hide: 5, ore: 4, timber: 2 }, output: "deadeye-hat" },
-  { id: "ironbark-hood", name: "Ironbark scout hood", description: "Armor and dodge for the Ironbark set.", cost: 155, level: 5, materials: { hide: 6, scrap: 4, ore: 2 }, output: "ironbark-hood" },
-  { id: "ironbark-gloves", name: "Ironbark guard gloves", description: "The final piece for a sturdy Ironbark kit.", cost: 225, level: 7, materials: { hide: 8, scrap: 6, ore: 4 }, output: "ironbark-gloves" },
+  { id: "deadeye-hat", name: "Deadeye's sightline hat", description: "A precise hat with a leather crown and copper sights.", cost: 150, level: 5, materials: { leather: 2, ingot: 1, timber: 2 }, stations: ["tannery", "smelter"], output: "deadeye-hat" },
+  { id: "ironbark-hood", name: "Ironbark scout hood", description: "Armor and dodge for the Ironbark set, cut from cured hide.", cost: 155, level: 5, materials: { leather: 3, scrap: 4, ore: 2 }, stations: ["tannery"], output: "ironbark-hood" },
+  { id: "ironbark-gloves", name: "Ironbark guard gloves", description: "The final piece for a sturdy Ironbark kit.", cost: 225, level: 7, materials: { leather: 4, ingot: 2, scrap: 6 }, stations: ["tannery", "smelter"], output: "ironbark-gloves" },
+  { id: "railbreaker-rifle", name: "Railbreaker rifle", description: "A campaign weapon forged with Ironjaw-tempered railsteel. Required to challenge Silas Vane.", cost: 480, level: 8, materials: { temperedIngot: 3, leather: 4, scrap: 8 }, stations: ["heartforge"], output: "railbreaker-rifle" },
+  { id: "marshal-coat", name: "Ironbark marshal's coat", description: "A reinforced coat with forged copper plates.", cost: 280, level: 7, materials: { leather: 6, ingot: 4, scrap: 8 }, stations: ["tannery", "smelter"], output: "marshal-coat" },
+  { id: "scattergun", name: "Deadeye Gulch scattergun", description: "A hard-hitting weapon built with a forged barrel.", cost: 360, level: 8, materials: { ingot: 6, timber: 8, scrap: 10 }, stations: ["smelter"], output: "scattergun" },
 ];
 
 const jobs = {
@@ -82,6 +96,50 @@ const jobs = {
   railguard: { name: "Night train watch", description: "Walk the freight cars after dark. Something's been stealing cargo.", category: "RAILROAD · EXPERT", icon: "▰", cost: 42, reward: 138, xp: 88, level: 5, materials: ["scrap", "ore", "hide"], materialAmount: [3, 4], supplies: ["healing-tonic", "biscuit"], rare: ["ironjaw-trophy"], fine: ["marshal-coat", "scattergun"] },
   telegram: { name: "Wire to the territory", description: "Repair a downed telegraph line before the storm rolls in.", category: "TERRITORY · MASTER", icon: "⌁", cost: 46, reward: 175, xp: 110, level: 6, materials: ["timber", "ore", "scrap"], materialAmount: [1, 2], supplies: ["healing-tonic"], rare: ["silver-star"], fine: ["scattergun"] },
 };
+
+const cabinTiers = [
+  null,
+  { name: "A one-room cabin", plots: 5, cost: { planks: 5, stone: 3, nails: 2 }, money: 90, level: 1, comfort: 0 },
+  { name: "The Quinn homestead", plots: 8, cost: { planks: 8, stone: 7, nails: 4 }, money: 220, level: 3, comfort: 1, bonus: { armor: 1 } },
+  { name: "A proper ranch house", plots: 12, cost: { planks: 12, stone: 12, nails: 7 }, money: 450, level: 5, comfort: 2, bonus: { armor: 2, dodge: 2 } },
+  { name: "The Dry Creek homestead", plots: 20, cost: { planks: 18, stone: 18, nails: 10 }, money: 850, level: 7, comfort: 3, bonus: { armor: 3, dodge: 3 } },
+];
+
+const homesteadBuildings = {
+  garden: { name: "Kitchen garden", icon: "✿", description: "A neat herb patch tended behind the house.", plots: 2, level: 1, cost: { planks: 2, stone: 1, nails: 1 }, money: 55, production: { herbs: 2 }, comfort: 1 },
+  timberYard: { name: "Woodlot", icon: "♧", description: "A fenced stand of young trees for a steady timber harvest.", plots: 3, level: 2, cost: { planks: 4, stone: 2, nails: 2 }, money: 110, production: { timber: 2 }, comfort: 0 },
+  pasture: { name: "Small pasture", icon: "▧", description: "A few hardy goats provide hides for the workbench.", plots: 3, level: 3, cost: { planks: 4, stone: 3, nails: 2 }, money: 145, production: { hide: 1 }, comfort: 1 },
+  smelter: { name: "Assay shed", icon: "◆", description: "A stone furnace and anvil to turn ore into usable copper.", plots: 3, level: 3, cost: { planks: 4, stone: 6, nails: 3 }, money: 190, station: "smelter", comfort: 0 },
+  heartforge: { name: "Ironheart Forge", icon: "▰", description: "Rebuild the assay shed around Ironjaw's ironheart to temper railsteel. Requires the assay shed and the boss's unique core.", plots: 0, level: 6, cost: { ironheart: 1, planks: 6, stone: 8, nails: 6 }, money: 420, station: "heartforge", prerequisite: "smelter", comfort: 0 },
+  tannery: { name: "Tanning shed", icon: "▤", description: "A covered rack for curing hides into sturdy leather.", plots: 2, level: 4, cost: { planks: 5, stone: 2, nails: 3 }, money: 185, station: "tannery", comfort: 0 },
+  watchtower: { name: "Ridge watchtower", icon: "⚑", description: "A clear view of the road makes you quicker to spot danger.", plots: 3, level: 4, cost: { planks: 7, stone: 4, nails: 4 }, money: 250, bonus: { aim: 4 }, comfort: 0 },
+  palisade: { name: "Rough palisade", icon: "▰", description: "A stout fence makes the homestead safer and steadies your nerves.", plots: 4, level: 5, cost: { planks: 7, stone: 6, nails: 6 }, money: 300, bonus: { armor: 3, dodge: 2 }, comfort: 0 },
+};
+
+const builderStock = [
+  { id: "planks", price: 18 },
+  { id: "stone", price: 14 },
+  { id: "nails", price: 22 },
+];
+
+const refinements = [
+  { id: "copper", name: "Smelt copper", station: "smelter", input: { ore: 3, scrap: 1 }, output: { ingot: 1 } },
+  { id: "leather", name: "Cure leather", station: "tannery", input: { hide: 3, herbs: 1 }, output: { leather: 1 } },
+  { id: "railsteel", name: "Temper railsteel", station: "heartforge", input: { ingot: 2, scrap: 3 }, output: { temperedIngot: 1 } },
+];
+
+const storyChapters = [
+  { title: "A Place to Begin", scene: "The deed was tucked inside your father's last letter. The Bell place is little more than a fence line and a collapsed roof, but the land is yours if you can make it livable.", reward: 70, xp: 35, requirements: [{ kind: "land", label: "Claim the old Bell homestead" }, { kind: "cabin", target: 1, label: "Raise the first cabin" }] },
+  { title: "Neighbors at the Rail", scene: "A repaired roof changes how Dry Creek looks at you. Ada remembers your family, and the postmaster has a name for the stranger who bought your father's debts: Silas Vane.", reward: 100, xp: 55, requirements: [{ kind: "level", target: 2, label: "Reach level 2" }, { kind: "jobs", target: 5, label: "Complete 5 jobs" }, { kind: "explorations", target: 2, label: "Ride 2 trails" }] },
+  { title: "The Red Hill Assay", scene: "A copper sample hidden beneath the cabin bears the mark of an abandoned claim. The old assay book says the vein is worthless until someone can smelt it.", reward: 125, xp: 70, requirements: [{ kind: "building", key: "smelter", label: "Build an assay shed" }, { kind: "refined", target: 2, label: "Smelt 2 copper ingots" }] },
+  { title: "A Hand Worth Trusting", scene: "The assay book belonged to Ada's brother, who vanished the same winter your father died. She gives you his last ledger page: Vane paid the railroad to keep the claim quiet.", reward: 150, xp: 85, requirements: [{ kind: "level", target: 3, label: "Reach level 3" }, { kind: "crafted", target: 2, label: "Craft 2 workbench items" }, { kind: "cabin", target: 2, label: "Expand the cabin once" }] },
+  { title: "Roots and Roof Beams", scene: "The land starts giving back. Ada trades you seed, and Old Man Bell brings a pair of goats. A home can be more than shelter; it can keep the whole town going.", reward: 175, xp: 100, requirements: [{ kind: "building", key: "garden", label: "Plant the kitchen garden" }, { kind: "building", key: "pasture", label: "Fence a small pasture" }, { kind: "productionDays", target: 3, label: "Harvest from your homestead on 3 mornings" }] },
+  { title: "A Name on the Wanted Board", scene: "Vane's riders have started leaning on the ranches. The sheriff is short-handed. Prove you can protect the trail by driving off a ridgeback and capturing a road-agent; the outlaw's freight token points to Ironjaw's den.", reward: 200, xp: 120, requirements: [{ kind: "level", target: 4, label: "Reach level 4" }, { kind: "enemyWins", key: "coyote", target: 1, label: "Defeat a Ridgeback coyote" }, { kind: "enemyWins", key: "outlaw", target: 1, label: "Defeat a Gulch road-agent" }, { kind: "building", key: "palisade", label: "Protect the homestead" }] },
+  { title: "The Lantern's Ledger", scene: "A rescued rider recognizes the name in Ada's ledger. Vane's outfit has been shipping stolen ore on the night train. The proof is somewhere in the freight cars.", reward: 240, xp: 140, requirements: [{ kind: "cabin", target: 3, label: "Build a proper ranch house" }, { kind: "buildings", target: 4, label: "Raise 4 homestead buildings" }, { kind: "level", target: 5, label: "Reach level 5" }] },
+  { title: "Last Train to Dry Creek", scene: "You board the night train with the sheriff. The crew scatters, but their foreman leaves a trail of copper dust toward the old mine—and a warning: Vane is coming himself.", reward: 280, xp: 160, requirements: [{ kind: "job", key: "railguard", target: 2, label: "Stand watch on 2 night trains" }, { kind: "job", key: "mine", target: 2, label: "Work the old copper seam twice" }, { kind: "building", key: "tannery", label: "Build a tanning shed" }] },
+  { title: "Ironjaw's Trail", scene: "Ironjaw's ironheart can turn the assay shed into a forge no ordinary furnace could match. Temper railsteel there, then build the Railbreaker rifle. Vane won't face you until you bring proof you can finish what you started.", reward: 350, xp: 200, requirements: [{ kind: "boss", key: "ironjaw", target: 1, label: "Defeat Ironjaw and claim his ironheart" }, { kind: "building", key: "heartforge", label: "Build the Ironheart Forge" }, { kind: "refinedMaterial", key: "temperedIngot", target: 3, label: "Temper 3 railsteel ingots" }, { kind: "craftedItem", key: "railbreaker-rifle", target: 1, label: "Craft the Railbreaker rifle" }] },
+  { title: "A Town Worth Saving", scene: "Vane arrives in person to take the valley. Your Railbreaker rifle is proof that Ironjaw's strength, the town's craft, and your own hard work are finally one. Face Vane and save the homestead.", reward: 500, xp: 300, requirements: [{ kind: "level", target: 8, label: "Reach level 8" }, { kind: "cabin", target: 4, label: "Finish the homestead" }, { kind: "buildings", target: 7, label: "Complete 7 homestead improvements" }, { kind: "equipped", key: "railbreaker-rifle", label: "Equip the Railbreaker rifle" }, { kind: "boss", key: "vane", target: 1, label: "Defeat Silas Vane" }] },
+];
 
 const shopStock = [
   { id: "biscuit", name: "Trail biscuits", description: "+25 energy", price: 8, level: 1, icon: "▤", consumable: true },
@@ -107,9 +165,10 @@ const routes = {
 };
 
 const enemies = {
-  coyote: { name: "Ridgeback coyote", kind: "BEAST · COMMON", health: 25, attack: 5, evasion: 6, reward: 18, xp: 18, icon: "♧", boss: false },
-  outlaw: { name: "Gulch road-agent", kind: "OUTLAW · TOUGH", health: 48, attack: 10, evasion: 12, reward: 42, xp: 36, icon: "♠", boss: false },
-  ironjaw: { name: "Ironjaw, the old bear", kind: "BOSS · LEGENDARY", health: 125, attack: 18, evasion: 8, reward: 180, xp: 120, icon: "◆", boss: true },
+  coyote: { name: "Ridgeback coyote", kind: "BEAST · COMMON", purpose: "First proof for the sheriff. Defeat one to open the Ironjaw trail.", health: 25, attack: 5, evasion: 6, reward: 18, xp: 18, icon: "♧", boss: false },
+  outlaw: { name: "Gulch road-agent", kind: "OUTLAW · TOUGH", purpose: "Recover Vane's freight token. One victory is required to locate Ironjaw.", health: 48, attack: 10, evasion: 12, reward: 42, xp: 36, icon: "♠", boss: false },
+  ironjaw: { name: "Ironjaw, the old bear", kind: "BOSS · LEGENDARY", purpose: "The ironheart from this fight rebuilds your assay shed into the only forge that can temper railsteel.", health: 125, attack: 18, evasion: 8, reward: 180, xp: 120, icon: "◆", boss: true, level: 3, power: 18, storyChapter: 6, requiredWins: { coyote: 1, outlaw: 1 }, requiredItems: { ridgebackMark: 1, freightToken: 1 } },
+  vane: { name: "Silas Vane", kind: "BOSS · RAILROAD TYCOON", purpose: "Campaign finale. Bring the equipped Railbreaker rifle forged from Ironjaw's ironheart.", health: 240, attack: 22, evasion: 18, reward: 850, xp: 450, icon: "♠", boss: true, level: 8, power: 45, storyChapter: 9, requiredWeapon: "railbreaker-rifle" },
 };
 
 const missions = [
@@ -117,7 +176,7 @@ const missions = [
   { id: "supply-run", name: "Stock the workbench", detail: "Gather 12 raw materials.", target: 12, stat: "materialsGathered", reward: 55, xp: 30 },
   { id: "craftsman", name: "Make something of it", detail: "Craft 2 recipes.", target: 2, stat: "itemsCrafted", reward: 70, xp: 40 },
   { id: "gulch-clear", name: "Keep the gulch clear", detail: "Win 5 frontier fights.", target: 5, stat: "monstersDefeated", reward: 85, xp: 55 },
-  { id: "ironjaw", name: "A name in the ledger", detail: "Defeat Ironjaw.", target: 1, stat: "bossesDefeated", reward: 150, xp: 100 },
+  { id: "ironjaw", name: "A name in the ledger", detail: "Defeat Ironjaw.", target: 1, stat: "bossesById", enemyId: "ironjaw", reward: 150, xp: 100 },
 ];
 
 const dailySideMissions = [
@@ -131,9 +190,79 @@ function freshDailyProgress() {
 }
 
 function materialDemand(id) {
+  if (id === "ironheart") return "Required to build the Ironheart Forge · guaranteed Ironjaw reward";
+  if (id === "temperedIngot") return "Required to craft the Railbreaker rifle · need 3";
+  if (id === "ridgebackMark" || id === "freightToken") {
+    return "Campaign evidence · proves the trail to Ironjaw's den";
+  }
+  if (["planks", "stone", "nails"].includes(id)) {
+    return "Builder's Yard material · used for homestead construction";
+  }
   const usingRecipes = recipes.filter((recipe) => recipe.materials[id]);
   const total = usingRecipes.reduce((sum, recipe) => sum + recipe.materials[id], 0);
   return `Used in ${usingRecipes.length} ${usingRecipes.length === 1 ? "recipe" : "recipes"} · ${total} needed`;
+}
+
+function homesteadPlotsUsed() {
+  return state.homestead.buildings.reduce((sum, id) => sum + homesteadBuildings[id].plots, 0);
+}
+
+function homesteadComfort() {
+  const cabin = cabinTiers[state.homestead.cabin];
+  return (cabin?.comfort || 0) + state.homestead.buildings.reduce((sum, id) => sum + homesteadBuildings[id].comfort, 0);
+}
+
+function homesteadStatBonuses() {
+  const bonuses = { armor: 0, dodge: 0, aim: 0 };
+  const sources = [
+    cabinTiers[state.homestead.cabin]?.bonus,
+    ...state.homestead.buildings.map((id) => homesteadBuildings[id].bonus),
+  ].filter(Boolean);
+  for (const bonus of sources) {
+    for (const [stat, value] of Object.entries(bonus)) bonuses[stat] += value;
+  }
+  return bonuses;
+}
+
+function hasStation(station) {
+  return state.homestead.buildings.some((id) => homesteadBuildings[id].station === station);
+}
+
+function storyRequirementProgress(requirement) {
+  switch (requirement.kind) {
+    case "land": return Number(state.homestead.landClaimed);
+    case "cabin": return state.homestead.cabin;
+    case "level": return state.level;
+    case "jobs": return state.stats.jobsCompleted;
+    case "explorations": return state.stats.explorations;
+    case "building": return Number(state.homestead.buildings.includes(requirement.key));
+    case "refined": return state.stats.refined;
+    case "crafted": return state.stats.itemsCrafted;
+    case "productionDays": return state.stats.productionDays;
+    case "wins": return state.stats.monstersDefeated;
+    case "bosses": return state.stats.bossesDefeated;
+    case "boss": return state.stats.bossesById[requirement.key] || 0;
+    case "enemyWins": return state.stats.enemyWins[requirement.key] || 0;
+    case "refinedMaterial": return state.stats.refinedById[requirement.key] || 0;
+    case "craftedItem": return state.stats.craftedById[requirement.key] || 0;
+    case "equipped": return Number(state.equipped.weapon === requirement.key);
+    case "buildings": return state.homestead.buildings.length;
+    case "job": return state.stats.jobsById[requirement.key] || 0;
+    default: return 0;
+  }
+}
+
+function storyRequirementComplete(requirement) {
+  const target = requirement.target || 1;
+  return storyRequirementProgress(requirement) >= target;
+}
+
+function formatMaterialCosts(costs) {
+  return Object.entries(costs).map(([id, amount]) => `${materials[id].shortName} ${countItem(id)}/${amount}`).join(" · ");
+}
+
+function canPayMaterials(costs) {
+  return Object.entries(costs).every(([id, amount]) => countItem(id) >= amount);
 }
 
 function freshState() {
@@ -146,8 +275,10 @@ function freshState() {
       { id: "biscuit", quantity: 2 },
     ],
     equipped: { weapon: "old-revolver", armor: "patched-coat", hat: null, boots: null, charm: null, gloves: null },
-    stats: { jobsCompleted: 0, materialsGathered: 0, itemsCrafted: 0, monstersDefeated: 0, bossesDefeated: 0 },
+    stats: { jobsCompleted: 0, materialsGathered: 0, itemsCrafted: 0, craftedById: {}, monstersDefeated: 0, bossesDefeated: 0, bossesById: {}, enemyWins: {}, explorations: 0, refined: 0, refinedById: {}, productionDays: 0, jobsById: {} },
     claimedMissions: [],
+    homestead: { landClaimed: false, cabin: 0, buildings: [] },
+    story: { chapter: 0, completed: [] },
   };
 }
 
@@ -170,7 +301,27 @@ function loadState() {
           return items;
         }, []) : initial.inventory,
       equipped: { ...initial.equipped, ...(saved.equipped || {}) },
-      stats: { ...initial.stats, ...(saved.stats || {}) },
+      stats: {
+        ...initial.stats,
+        ...(saved.stats || {}),
+        jobsById: Object.fromEntries(Object.keys(jobs).map((id) => [id, Number(saved.stats?.jobsById?.[id]) || 0])),
+        bossesById: Object.fromEntries(Object.keys(enemies).map((id) => [id, Number(saved.stats?.bossesById?.[id]) || 0])),
+        enemyWins: Object.fromEntries(Object.keys(enemies).map((id) => [id, Number(saved.stats?.enemyWins?.[id]) || 0])),
+        refinedById: Object.fromEntries(Object.keys(materials).map((id) => [id, Number(saved.stats?.refinedById?.[id]) || 0])),
+        craftedById: Object.fromEntries(Object.keys(gear).map((id) => [id, Number(saved.stats?.craftedById?.[id]) || 0])),
+      },
+      homestead: {
+        ...initial.homestead,
+        ...(saved.homestead || {}),
+        cabin: Number.isInteger(saved.homestead?.cabin) ? Math.min(cabinTiers.length - 1, Math.max(0, saved.homestead.cabin)) : 0,
+        buildings: Array.isArray(saved.homestead?.buildings) ? [...new Set(saved.homestead.buildings.filter((id) => Object.hasOwn(homesteadBuildings, id)))] : [],
+      },
+      story: {
+        ...initial.story,
+        ...(saved.story || {}),
+        chapter: Number.isInteger(saved.story?.chapter) ? Math.min(storyChapters.length, Math.max(0, saved.story.chapter)) : 0,
+        completed: Array.isArray(saved.story?.completed) ? saved.story.completed.filter((chapter) => Number.isInteger(chapter) && chapter > 0 && chapter <= storyChapters.length) : [],
+      },
       dailyProgress: { ...freshDailyProgress(), ...(saved.dailyProgress || {}) },
       claimedMissions: Array.isArray(saved.claimedMissions) ? saved.claimedMissions : [],
       activeJob: saved.activeJob && Object.hasOwn(jobs, saved.activeJob.id) && Number.isFinite(saved.activeJob.finishesAt)
@@ -266,6 +417,43 @@ function equipmentPower() {
   return Object.values(state.equipped).reduce((total, id) => total + (id && gear[id] ? gear[id].power : 0), 0);
 }
 
+function bossRequirements(enemy) {
+  return { level: enemy.level || 3, power: enemy.power || 18 };
+}
+
+function canChallengeBoss(enemy) {
+  const requirements = bossRequirements(enemy);
+  const requiredWinsMet = Object.entries(enemy.requiredWins || {}).every(([id, count]) => (state.stats.enemyWins[id] || 0) >= count);
+  const requiredItemsMet = Object.entries(enemy.requiredItems || {}).every(([id, count]) => countItem(id) >= count);
+  return requiredWinsMet
+    && requiredItemsMet
+    && (enemy.storyChapter === undefined || state.story.chapter >= enemy.storyChapter)
+    && state.level >= requirements.level
+    && equipmentPower() >= requirements.power
+    && (!enemy.requiredWeapon || state.equipped.weapon === enemy.requiredWeapon);
+}
+
+function bossLockReason(enemy) {
+  for (const [id, count] of Object.entries(enemy.requiredWins || {})) {
+    const wins = state.stats.enemyWins[id] || 0;
+    if (wins < count) return `Defeat ${enemies[id].name} (${wins}/${count})`;
+  }
+  for (const [id, count] of Object.entries(enemy.requiredItems || {})) {
+    const quantity = countItem(id);
+    if (quantity < count) return `Recover ${materials[id].name} (${quantity}/${count})`;
+  }
+  if (enemy.storyChapter !== undefined && state.story.chapter < enemy.storyChapter) {
+    return `Continue the Vane Ledger to chapter ${enemy.storyChapter + 1}`;
+  }
+  if (enemy.requiredWeapon && state.equipped.weapon !== enemy.requiredWeapon) {
+    return `Equip the ${gear[enemy.requiredWeapon].name}`;
+  }
+  const requirements = bossRequirements(enemy);
+  if (state.level < requirements.level) return `Reach level ${requirements.level}`;
+  if (equipmentPower() < requirements.power) return `Bring equipment power ${requirements.power}`;
+  return `Requires level ${requirements.level} · power ${requirements.power}`;
+}
+
 function equipmentStats() {
   const items = Object.values(state.equipped).map((id) => id && gear[id]).filter(Boolean);
   const stats = {
@@ -283,6 +471,7 @@ function equipmentStats() {
       for (const [stat, value] of Object.entries(set.fullSet)) stats[stat] += value;
     }
   }
+  for (const [stat, value] of Object.entries(homesteadStatBonuses())) stats[stat] += value;
   return stats;
 }
 
@@ -530,9 +719,10 @@ function renderRecipes() {
     const description = document.createElement("p");
     description.textContent = recipe.description;
     const costs = document.createElement("small");
+    const missingStations = (recipe.stations || []).filter((station) => !hasStation(station));
     costs.textContent = recipe.level > state.level
       ? `Unlocks at level ${recipe.level}`
-      : `${Object.entries(recipe.materials).map(([id, amount]) => `${materials[id].name} ${countItem(id)}/${amount}`).join(" · ")} · $${recipe.cost}`;
+      : `${formatMaterialCosts(recipe.materials)} · $${recipe.cost}${missingStations.length ? ` · Requires ${missingStations.map((station) => homesteadBuildings[station].name).join(" and ")}` : ""}`;
     const stats = document.createElement("small");
     stats.className = "recipe-stats";
     stats.textContent = itemStats(gear[recipe.output] || {}) || "Useful supplies for the road";
@@ -541,7 +731,7 @@ function renderRecipes() {
     craft.type = "button";
     craft.className = "small-button craft-button";
     craft.textContent = "Craft";
-    craft.disabled = recipe.level > state.level || state.money < recipe.cost || Object.entries(recipe.materials).some(([id, amount]) => countItem(id) < amount) || (gear[recipe.output] && countItem(recipe.output) > 0);
+    craft.disabled = recipe.level > state.level || missingStations.length > 0 || state.money < recipe.cost || !canPayMaterials(recipe.materials) || (gear[recipe.output] && countItem(recipe.output) > 0);
     craft.addEventListener("click", () => craftRecipe(recipe.id));
     row.append(details, craft);
     list.append(row);
@@ -582,7 +772,8 @@ function renderMissions() {
   const list = $("#mission-list");
   list.replaceChildren();
   for (const mission of missions) {
-    const progress = Math.min(state.stats[mission.stat], mission.target);
+    const progressValue = mission.enemyId ? state.stats.bossesById[mission.enemyId] || 0 : state.stats[mission.stat];
+    const progress = Math.min(progressValue, mission.target);
     const claimed = state.claimedMissions.includes(mission.id);
     const row = document.createElement("article");
     row.className = `mission-card${claimed ? " mission-complete" : ""}`;
@@ -604,6 +795,179 @@ function renderMissions() {
     reward.textContent = `Reward · $${mission.reward} + ${mission.xp} XP`;
     row.append(top, description, meter, reward);
     list.append(row);
+  }
+}
+
+function storyReady(chapter) {
+  return chapter.requirements.every(storyRequirementComplete);
+}
+
+function renderStory() {
+  const content = $("#story-content");
+  content.replaceChildren();
+  const chapter = storyChapters[state.story.chapter];
+  if (!chapter) {
+    const finished = document.createElement("p");
+    finished.className = "story-scene";
+    finished.textContent = "The deed is safe, Dry Creek is standing, and the valley is yours to shape. Keep building, crafting, and taking work from the board.";
+    content.append(finished);
+    $("#story-count").textContent = `CAMPAIGN COMPLETE · ${storyChapters.length}/${storyChapters.length}`;
+    return;
+  }
+
+  $("#story-count").textContent = `CHAPTER ${state.story.chapter + 1} OF ${storyChapters.length}`;
+  const title = document.createElement("h3");
+  title.textContent = chapter.title;
+  const scene = document.createElement("p");
+  scene.className = "story-scene";
+  scene.textContent = chapter.scene;
+  const requirements = document.createElement("ul");
+  requirements.className = "story-requirements";
+  for (const requirement of chapter.requirements) {
+    const complete = storyRequirementComplete(requirement);
+    const row = document.createElement("li");
+    row.className = complete ? "story-requirement complete" : "story-requirement";
+    const check = document.createElement("span");
+    check.textContent = complete ? "✓" : "·";
+    const label = document.createElement("span");
+    label.textContent = requirement.label;
+    const progress = document.createElement("b");
+    progress.textContent = requirement.kind === "building" || requirement.kind === "land"
+      ? complete ? "DONE" : "TODO"
+      : `${Math.min(storyRequirementProgress(requirement), requirement.target)}/${requirement.target}`;
+    row.append(check, label, progress);
+    requirements.append(row);
+  }
+  const reward = document.createElement("small");
+  reward.className = "story-reward";
+  reward.textContent = `Chapter reward · $${chapter.reward} + ${chapter.xp} XP`;
+  const completeButton = document.createElement("button");
+  completeButton.type = "button";
+  completeButton.className = "small-button story-complete-button";
+  completeButton.dataset.storyComplete = "true";
+  completeButton.textContent = "Continue the story →";
+  completeButton.disabled = !storyReady(chapter);
+  content.append(title, scene, requirements, reward, completeButton);
+}
+
+function buildingCostLabel(costs, money) {
+  return `${formatMaterialCosts(costs)} · $${money}`;
+}
+
+function buildingBlockReason(buildingId, building) {
+  if (!state.homestead.landClaimed) return "Claim the homestead first";
+  if (!state.homestead.cabin) return "Build a cabin first";
+  if (state.level < building.level) return `Unlocks at level ${building.level}`;
+  if (state.homestead.buildings.includes(buildingId)) return "Already built";
+  if (building.prerequisite && !state.homestead.buildings.includes(building.prerequisite)) {
+    return `Requires ${homesteadBuildings[building.prerequisite].name}`;
+  }
+  if (homesteadPlotsUsed() + building.plots > (cabinTiers[state.homestead.cabin]?.plots || 0)) return "Expand your cabin to free more plots";
+  if (state.money < building.money || !canPayMaterials(building.cost)) return "Gather funds and supplies";
+  return "";
+}
+
+function renderHomestead() {
+  renderStory();
+  const home = state.homestead;
+  const status = $("#homestead-status");
+  status.textContent = !home.landClaimed ? "No deed yet · the old Bell place is waiting" : home.cabin
+    ? cabinTiers[home.cabin].name
+    : "Bell homestead · land claimed";
+  const plotLimit = cabinTiers[home.cabin]?.plots || 0;
+  $("#homestead-capacity").textContent = `${homesteadPlotsUsed()} / ${plotLimit} plots used`;
+  const comfort = homesteadComfort();
+  const bonusParts = [];
+  if (comfort) bonusParts.push(`+${Math.min(20, comfort * 4)} sleep energy`);
+  const bonuses = homesteadStatBonuses();
+  if (bonuses.armor || bonuses.dodge || bonuses.aim) bonusParts.push(`Home defense: +${bonuses.armor} armor · +${bonuses.dodge}% dodge · +${bonuses.aim}% aim`);
+  $("#homestead-buffs").textContent = bonusParts.length ? bonusParts.join(" · ") : "A roof over your head will improve sleep and help you hold the line.";
+
+  const claimButton = $("#claim-land");
+  claimButton.hidden = home.landClaimed;
+  claimButton.disabled = home.landClaimed;
+  const nextTier = cabinTiers[home.cabin + 1];
+  const cabinButton = $("#upgrade-cabin");
+  if (!nextTier) {
+    cabinButton.textContent = "Homestead complete";
+    cabinButton.disabled = true;
+    $("#cabin-cost").textContent = "The largest home and full plot are yours.";
+  } else {
+    cabinButton.textContent = home.cabin ? "Expand the house" : "Build the cabin";
+    cabinButton.disabled = !home.landClaimed || state.level < nextTier.level || state.money < nextTier.money || !canPayMaterials(nextTier.cost);
+    $("#cabin-cost").textContent = `Next: ${nextTier.name} · ${buildingCostLabel(nextTier.cost, nextTier.money)} · Level ${nextTier.level}`;
+  }
+
+  const supplyList = $("#builder-stock");
+  supplyList.replaceChildren();
+  for (const stock of builderStock) {
+    const row = document.createElement("div");
+    row.className = "builder-stock-row";
+    const label = document.createElement("span");
+    label.textContent = `${materials[stock.id].icon} ${materials[stock.id].name} · owned ${countItem(stock.id)}`;
+    const actions = document.createElement("div");
+    actions.className = "builder-stock-actions";
+    for (const quantity of [1, 5]) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "small-button";
+      button.dataset.buySupply = stock.id;
+      button.dataset.quantity = String(quantity);
+      button.textContent = `Buy ${quantity} · $${stock.price * quantity}`;
+      button.disabled = state.money < stock.price * quantity;
+      actions.append(button);
+    }
+    row.append(label, actions);
+    supplyList.append(row);
+  }
+
+  const buildingList = $("#building-list");
+  buildingList.replaceChildren();
+  for (const [id, building] of Object.entries(homesteadBuildings)) {
+    const card = document.createElement("article");
+    card.className = `building-card${home.buildings.includes(id) ? " building-complete" : ""}`;
+    const details = document.createElement("div");
+    const heading = document.createElement("b");
+    heading.textContent = `${building.icon} ${building.name}`;
+    const description = document.createElement("p");
+    description.textContent = building.description;
+    const cost = document.createElement("small");
+    const reason = buildingBlockReason(id, building);
+    cost.textContent = home.buildings.includes(id) ? building.production
+      ? `Daily yield on sleep · ${Object.entries(building.production).map(([item, amount]) => `+${amount} ${materials[item].shortName}`).join(" · ")}`
+      : building.station ? "Crafting station · unlocks refined recipes" : `Home bonus · ${formatSetStats(building.bonus)}`
+      : `${building.plots} plots · ${reason || buildingCostLabel(building.cost, building.money)}`;
+    details.append(heading, description, cost);
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "small-button";
+    button.dataset.build = id;
+    button.textContent = home.buildings.includes(id) ? "Built" : "Build";
+    button.disabled = Boolean(reason);
+    card.append(details, button);
+    buildingList.append(card);
+  }
+
+  const refinementList = $("#refinement-list");
+  refinementList.replaceChildren();
+  for (const recipe of refinements) {
+    const row = document.createElement("div");
+    row.className = "refinement-row";
+    const details = document.createElement("div");
+    const title = document.createElement("b");
+    title.textContent = recipe.name;
+    const description = document.createElement("small");
+    description.textContent = `${formatMaterialCosts(recipe.input)} → ${Object.entries(recipe.output).map(([id, amount]) => `${materials[id].shortName} ×${amount}`).join(", ")}`;
+    details.append(title, description);
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "small-button";
+    button.dataset.refine = recipe.id;
+    const built = hasStation(recipe.station);
+    button.textContent = built ? "Refine" : `Needs ${homesteadBuildings[recipe.station].name}`;
+    button.disabled = !built || !canPayMaterials(recipe.input);
+    row.append(details, button);
+    refinementList.append(row);
   }
 }
 
@@ -652,11 +1016,71 @@ function renderDailyMissions() {
   $("#daily-bonus").classList.toggle("bonus-earned", state.questClaimed);
 }
 
+function renderCombatPath() {
+  const path = $("#combat-path");
+  path.replaceChildren();
+  const coyoteWins = state.stats.enemyWins.coyote || 0;
+  const outlawWins = state.stats.enemyWins.outlaw || 0;
+  const ironjawWins = state.stats.bossesById.ironjaw || 0;
+  const ironjawUnlocked = canChallengeBoss(enemies.ironjaw) || ironjawWins > 0;
+  const forgeBuilt = state.homestead.buildings.includes("heartforge");
+  const railsteel = state.stats.refinedById.temperedIngot || 0;
+  const railbreakerCrafted = state.stats.craftedById["railbreaker-rifle"] || 0;
+  const vaneWins = state.stats.bossesById.vane || 0;
+  const finaleUnlocked = canChallengeBoss(enemies.vane) || vaneWins > 0;
+  const stages = [
+    {
+      title: "1. Earn the sheriff's trust",
+      status: coyoteWins && outlawWins ? "COMPLETE" : "REQUIRED",
+      complete: coyoteWins > 0 && outlawWins > 0,
+      detail: `Defeat a Ridgeback coyote (${Math.min(coyoteWins, 1)}/1) and a Gulch road-agent (${Math.min(outlawWins, 1)}/1). Their trail clues are required to open Ironjaw's den.`,
+    },
+    {
+      title: "2. Bring down Ironjaw",
+      status: ironjawWins ? "COMPLETE" : ironjawUnlocked ? "UNLOCKED" : "LOCKED",
+      complete: ironjawWins > 0,
+      detail: ironjawWins
+        ? "Ironjaw's ironheart is yours. Build the Ironheart Forge upgrade at your homestead."
+        : "Requires both victories and their trail-mark/freight-token clues, chapter 7, level 3, and power 18. His ironheart is the key to the special forge.",
+    },
+    {
+      title: "3. Forge the Railbreaker",
+      status: railbreakerCrafted ? "COMPLETE" : forgeBuilt ? "IN PROGRESS" : "LOCKED",
+      complete: railbreakerCrafted > 0,
+      detail: `Build the Ironheart Forge, temper 3 railsteel (each uses 2 copper ingots + 3 scrap; ${Math.min(railsteel, 3)}/3 made), then craft the rifle with 4 leather, 8 scrap, and $480 (${Math.min(railbreakerCrafted, 1)}/1).`,
+    },
+    {
+      title: "4. Stop Silas Vane",
+      status: vaneWins ? "COMPLETE" : finaleUnlocked ? "UNLOCKED" : "LOCKED",
+      complete: vaneWins > 0,
+      detail: finaleUnlocked
+        ? "Defeat Vane to finish the campaign and claim his signet."
+        : "Reach chapter 10, level 8, and equipment power 45; equip the Railbreaker rifle. Vane cannot be challenged with another weapon.",
+    },
+  ];
+  for (const stage of stages) {
+    const card = document.createElement("article");
+    card.className = `combat-stage${stage.complete ? " combat-stage-complete" : ""}`;
+    const header = document.createElement("div");
+    header.className = "combat-stage-heading";
+    const title = document.createElement("b");
+    title.textContent = stage.title;
+    const status = document.createElement("span");
+    status.textContent = stage.status;
+    header.append(title, status);
+    const detail = document.createElement("p");
+    detail.textContent = stage.detail;
+    card.append(header, detail);
+    path.append(card);
+  }
+}
+
 function renderBattle() {
+  renderCombatPath();
   const list = $("#enemy-list");
   list.replaceChildren();
   for (const [id, enemy] of Object.entries(enemies)) {
-    const bossReady = equipmentPower() >= 18 && state.level >= 3;
+    const bossReady = !enemy.boss || canChallengeBoss(enemy);
     const button = document.createElement("button");
     button.type = "button";
     button.className = `enemy-card${enemy.boss ? " boss-card" : ""}${state.encounter?.id === id ? " enemy-selected" : ""}`;
@@ -669,8 +1093,11 @@ function renderBattle() {
     const name = document.createElement("b");
     name.textContent = enemy.name;
     const info = document.createElement("small");
-    info.textContent = enemy.boss && !bossReady ? "Requires level 3 · power 18" : `${enemy.kind} · ${enemy.health} health`;
-    copy.append(name, info);
+    info.textContent = enemy.boss && !bossReady ? bossLockReason(enemy) : `${enemy.kind} · ${enemy.health} health`;
+    const purpose = document.createElement("small");
+    purpose.className = "enemy-purpose";
+    purpose.textContent = enemy.purpose;
+    copy.append(name, info, purpose);
     const arrow = document.createElement("span");
     arrow.className = "enemy-arrow";
     arrow.textContent = enemy.boss && !bossReady ? "LOCKED" : "FIGHT →";
@@ -682,7 +1109,9 @@ function renderBattle() {
   const encounter = state.encounter;
   const enemy = encounter ? enemies[encounter.id] : null;
   $("#battle-title").textContent = enemy ? enemy.name : "The trail is quiet.";
-  $("#battle-description").textContent = enemy ? `${enemy.kind} · Victory earns $${enemy.reward} and ${enemy.xp} experience.` : "Pick a creature on the left to begin. Bosses require proper gear and a steady hand.";
+  $("#battle-description").textContent = enemy
+    ? `${enemy.kind} · Victory earns $${enemy.reward} and ${enemy.xp} XP. ${enemy.purpose}`
+    : "Combat is part of the Vane Ledger campaign. Defeat the coyote and outlaw to track Ironjaw; his ironheart unlocks the forge and the Railbreaker rifle needed to face Vane.";
   $("#battle-state").textContent = enemy ? "IN THE GULCH" : "NO ENCOUNTER";
   $("#enemy-health-label").textContent = enemy ? enemy.name.toUpperCase() : "ENEMY";
   $("#enemy-health-value").textContent = enemy ? `${encounter.health} / ${enemy.health}` : "—";
@@ -741,6 +1170,7 @@ function render() {
   renderShop();
   renderMissions();
   renderDailyMissions();
+  renderHomestead();
   renderBattle();
 }
 
@@ -773,7 +1203,8 @@ function gainExperience(amount) {
 
 function updateMissions() {
   for (const mission of missions) {
-    if (state.stats[mission.stat] < mission.target || state.claimedMissions.includes(mission.id)) continue;
+    const progress = mission.enemyId ? state.stats.bossesById[mission.enemyId] || 0 : state.stats[mission.stat];
+    if (progress < mission.target || state.claimedMissions.includes(mission.id)) continue;
     state.claimedMissions.push(mission.id);
     state.money += mission.reward;
     gainExperience(mission.xp);
@@ -850,6 +1281,7 @@ function finishJob() {
   state.dailyProgress.jobs += 1;
   state.money += job.reward;
   state.stats.jobsCompleted += 1;
+  state.stats.jobsById[id] = (state.stats.jobsById[id] || 0) + 1;
   gainExperience(job.xp);
   const drop = giveJobDrop(job);
   addNote(`Finished "${job.name}" for $${job.reward}. ${drop}`);
@@ -907,6 +1339,7 @@ function explore() {
   }
   state.energy -= route.cost;
   state.dailyProgress.explorations += 1;
+  state.stats.explorations += 1;
   gainExperience(8);
   const roll = Math.random();
   let message;
@@ -977,7 +1410,12 @@ function useItem(id) {
 
 function craftRecipe(id) {
   const recipe = recipes.find((entry) => entry.id === id);
-  if (!recipe || recipe.level > state.level || state.money < recipe.cost || Object.entries(recipe.materials).some(([material, quantity]) => countItem(material) < quantity)) {
+  const missingStations = recipe ? (recipe.stations || []).filter((station) => !hasStation(station)) : [];
+  if (recipe && missingStations.length) {
+    showToast(`Build the ${missingStations.map((station) => homesteadBuildings[station].name).join(" and ")} before crafting this.`);
+    return;
+  }
+  if (!recipe || recipe.level > state.level || state.money < recipe.cost || !canPayMaterials(recipe.materials)) {
     showToast("You don't have the materials or money for that recipe yet.");
     return;
   }
@@ -989,11 +1427,113 @@ function craftRecipe(id) {
   state.money -= recipe.cost;
   addItem(recipe.output);
   state.stats.itemsCrafted += 1;
+  state.stats.craftedById[recipe.output] = (state.stats.craftedById[recipe.output] || 0) + 1;
   addNote(`Crafted ${itemInfo(recipe.output).name} at the workbench.`);
   updateMissions();
   showToast(`Crafted ${itemInfo(recipe.output).name}.`);
   saveState();
   render();
+}
+
+function claimHomestead() {
+  if (state.homestead.landClaimed) return;
+  state.homestead.landClaimed = true;
+  addNote("You signed the deed to the old Bell place. The land is yours; now it needs a roof.");
+  showToast("Homestead claimed. Visit the Builder's Yard for supplies.");
+  saveState();
+  render();
+}
+
+function upgradeCabin() {
+  const nextTier = cabinTiers[state.homestead.cabin + 1];
+  if (!state.homestead.landClaimed || !nextTier || state.level < nextTier.level || state.money < nextTier.money || !canPayMaterials(nextTier.cost)) return;
+  for (const [id, amount] of Object.entries(nextTier.cost)) removeItem(id, amount);
+  state.money -= nextTier.money;
+  state.homestead.cabin += 1;
+  addNote(`Built ${nextTier.name}. The homestead now holds ${nextTier.plots} building plots.`);
+  showToast(`${nextTier.name} raised.`);
+  saveState();
+  render();
+}
+
+function buildHomesteadBuilding(id) {
+  const building = homesteadBuildings[id];
+  if (!building || buildingBlockReason(id, building)) return;
+  for (const [material, amount] of Object.entries(building.cost)) removeItem(material, amount);
+  state.money -= building.money;
+  state.homestead.buildings.push(id);
+  addNote(`Built ${building.name} on the homestead.`);
+  showToast(`${building.name} is ready.`);
+  saveState();
+  render();
+}
+
+function buyBuildingSupply(id, quantity) {
+  const stock = builderStock.find((entry) => entry.id === id);
+  if (!stock || !Number.isInteger(quantity) || quantity < 1 || state.money < stock.price * quantity) return;
+  state.money -= stock.price * quantity;
+  addItem(stock.id, quantity);
+  addNote(`Bought ${quantity} ${materials[id].name} from the Builder's Yard for $${stock.price * quantity}.`);
+  showToast(`Bought ${materials[id].shortName} ×${quantity}.`);
+  saveState();
+  render();
+}
+
+function refineMaterial(id) {
+  const recipe = refinements.find((entry) => entry.id === id);
+  if (!recipe || !hasStation(recipe.station) || !canPayMaterials(recipe.input)) return;
+  for (const [material, amount] of Object.entries(recipe.input)) removeItem(material, amount);
+  for (const [material, amount] of Object.entries(recipe.output)) addItem(material, amount);
+  state.stats.refined += Object.values(recipe.output).reduce((sum, amount) => sum + amount, 0);
+  for (const [material, amount] of Object.entries(recipe.output)) {
+    state.stats.refinedById[material] = (state.stats.refinedById[material] || 0) + amount;
+  }
+  addNote(`Refined materials at the ${homesteadBuildings[recipe.station].name}: ${Object.entries(recipe.output).map(([item, amount]) => `${materials[item].name} ×${amount}`).join(", ")}.`);
+  updateMissions();
+  showToast(`${recipe.name} complete.`);
+  saveState();
+  render();
+}
+
+function completeStoryChapter() {
+  const chapter = storyChapters[state.story.chapter];
+  if (!chapter || !storyReady(chapter)) return;
+  state.story.completed.push(state.story.chapter + 1);
+  state.story.chapter += 1;
+  state.money += chapter.reward;
+  gainExperience(chapter.xp);
+  addNote(`Chapter complete: "${chapter.title}". Dry Creek paid $${chapter.reward} for the work.`);
+  showToast(`Chapter complete: ${chapter.title} · +$${chapter.reward} · +${chapter.xp} XP`);
+  saveState();
+  render();
+}
+
+function applyHomesteadProduction() {
+  const produced = {};
+  for (const id of state.homestead.buildings) {
+    for (const [material, amount] of Object.entries(homesteadBuildings[id].production || {})) {
+      produced[material] = (produced[material] || 0) + amount;
+    }
+  }
+  const entries = Object.entries(produced);
+  if (!entries.length) return;
+  for (const [material, amount] of entries) {
+    addItem(material, amount);
+    state.stats.materialsGathered += amount;
+    state.dailyProgress.materials += amount;
+  }
+  state.stats.productionDays += 1;
+  addNote(`The homestead produced ${entries.map(([id, amount]) => `${materials[id].shortName} ×${amount}`).join(", ")} overnight.`);
+  updateMissions();
+}
+
+function storyAction(event) {
+  const target = event.target.closest("[data-story-complete], [data-build], [data-buy-supply], [data-refine]");
+  if (!target) return;
+  if (target.hasAttribute("data-story-complete")) completeStoryChapter();
+  else if (target.hasAttribute("data-build")) buildHomesteadBuilding(target.dataset.build);
+  else if (target.hasAttribute("data-buy-supply")) buyBuildingSupply(target.dataset.buySupply, Number(target.dataset.quantity));
+  else if (target.hasAttribute("data-refine")) refineMaterial(target.dataset.refine);
 }
 
 function buyStock(id) {
@@ -1032,13 +1572,19 @@ function startNewDay() {
       : "The day's bonus was already claimed.");
   }
   state.day += 1;
-  state.energy = Math.min(100, state.energy + 60);
-  state.health = Math.min(100, state.health + 25);
+  const comfort = homesteadComfort();
+  const energyRecovered = 60 + Math.min(20, comfort * 4);
+  const healthRecovered = 25 + Math.min(15, comfort * 3);
+  const actualEnergy = Math.min(energyRecovered, 100 - state.energy);
+  const actualHealth = Math.min(healthRecovered, 100 - state.health);
+  state.energy = Math.min(100, state.energy + energyRecovered);
+  state.health = Math.min(100, state.health + healthRecovered);
   state.jobsDone = [];
   state.questClaimed = false;
   state.dailyProgress = freshDailyProgress();
+  applyHomesteadProduction();
   addNote(`Day ${state.day} dawned over Dry Creek. The job board is fresh again.`);
-  showToast(`Good morning. Day ${state.day} begins.`);
+  showToast(`Good morning. Day ${state.day} begins. +${actualEnergy} energy, +${actualHealth} health.`);
   saveState();
   render();
 }
@@ -1046,8 +1592,8 @@ function startNewDay() {
 function beginFight(id) {
   const enemy = enemies[id];
   if (!enemy || state.encounter) return;
-  if (enemy.boss && (equipmentPower() < 18 || state.level < 3)) {
-    showToast("Ironjaw won't budge. Reach level 3 and bring equipment power 18.");
+  if (enemy.boss && !canChallengeBoss(enemy)) {
+    showToast(`${enemy.name} is out of reach. ${bossLockReason(enemy)}.`);
     return;
   }
   if (state.health <= 0) {
@@ -1062,19 +1608,47 @@ function beginFight(id) {
 }
 
 function winFight(enemy) {
+  const enemyId = state.encounter?.id;
   state.money += enemy.reward;
   gainExperience(enemy.xp);
   state.stats.monstersDefeated += 1;
+  state.stats.enemyWins[enemyId] = (state.stats.enemyWins[enemyId] || 0) + 1;
   state.dailyProgress.fights += 1;
-  if (enemy.boss) state.stats.bossesDefeated += 1;
+  if (enemy.boss) {
+    state.stats.bossesDefeated += 1;
+    state.stats.bossesById[enemyId] = (state.stats.bossesById[enemyId] || 0) + 1;
+  }
   const rewardRoll = Math.random();
   let loot = "";
-  if (enemy.boss) {
-    addItem("ironjaw-trophy");
-    loot = " Ironjaw's tooth is yours.";
+  if (enemyId === "ironjaw") {
+    const rewards = [];
+    if (!countItem("ironjaw-trophy")) {
+      addItem("ironjaw-trophy");
+      rewards.push("tooth");
+    }
+    if (!countItem("ironheart") && !state.homestead.buildings.includes("heartforge")) {
+      addItem("ironheart");
+      rewards.push("ironheart");
+    }
+    if (rewards.includes("ironheart")) {
+      loot = ` You recovered Ironjaw's ${rewards.join(" and ")}; the ironheart unlocks the Ironheart Forge.`;
+    } else if (rewards.length) {
+      loot = ` You recovered Ironjaw's ${rewards[0]}.`;
+    }
     if (!countItem("silver-star")) {
       addItem("silver-star");
       loot += " The marshal's silver star, too!";
+    }
+  } else if (enemyId === "vane") {
+    if (!countItem("vane-signet")) {
+      addItem("vane-signet");
+      loot = " You claimed Vane's silver signet.";
+    }
+  } else if (enemyId === "coyote" || enemyId === "outlaw") {
+    const clue = enemyId === "coyote" ? "ridgebackMark" : "freightToken";
+    if (!countItem(clue)) {
+      addItem(clue);
+      loot = ` You recovered the ${materials[clue].name}; it points the sheriff toward Ironjaw's den.`;
     }
   } else if (rewardRoll < 0.2) {
     const id = Math.random() < 0.5 ? "hide" : "ore";
@@ -1086,7 +1660,7 @@ function winFight(enemy) {
     addItem("healing-tonic");
     loot = " Found a frontier tonic.";
   }
-  if (state.encounter?.id === "ironjaw" && !countItem("silver-star")) {
+  if (enemyId === "ironjaw" && !countItem("silver-star")) {
     addItem("silver-star");
     loot += " The marshal's silver star, too!";
   }
@@ -1212,6 +1786,9 @@ $("#rest-button").addEventListener("click", () => {
   if (!restAtZeroHealth()) rest();
 });
 $("#day-button").addEventListener("click", startNewDay);
+$("#claim-land").addEventListener("click", claimHomestead);
+$("#upgrade-cabin").addEventListener("click", upgradeCabin);
+$("#homestead-panel").addEventListener("click", storyAction);
 $("#attack-button").addEventListener("click", attack);
 $("#retreat-button").addEventListener("click", retreat);
 
