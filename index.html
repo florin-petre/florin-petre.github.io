@@ -108,24 +108,8 @@
               <div><p class="eyebrow dark-eyebrow">Honest work, mostly</p><h2 id="jobs-title">The job board <span class="section-spark" aria-hidden="true">✳</span></h2></div>
               <span class="board-count" id="jobs-count">0 / 3 POSTED JOBS</span>
             </div>
-            <div class="job-list" id="job-list">
-              <article class="job-card" data-job-card="mail">
-                <div class="job-icon icon-mail" aria-hidden="true">✉</div>
-                <div class="job-info"><span class="job-category">DELIVERY · EASY</span><h3>Letters for Red Mesa</h3><p>Ride the ridge trail and bring the postmaster's reply back safe.</p><div class="job-tags"><span>◷ 1 min</span><span>✦ +18 XP</span><span>⚡ 12 energy</span></div></div>
-                <div class="job-reward"><strong>$24</strong><small>+ a little respect</small><button class="small-button" type="button" data-job="mail">Take the job <span aria-hidden="true">→</span></button></div>
-              </article>
-              <article class="job-card" data-job-card="ranch">
-                <div class="job-icon icon-ranch" aria-hidden="true">✳</div>
-                <div class="job-info"><span class="job-category">RANCH HAND · STEADY</span><h3>Fence-line trouble</h3><p>Old Man Bell says coyotes found a gap in the south pasture.</p><div class="job-tags"><span>◷ 1 min</span><span>✦ +28 XP</span><span>⚡ 20 energy</span></div></div>
-                <div class="job-reward"><strong>$39</strong><small>+ a chance at a find</small><button class="small-button" type="button" data-job="ranch">Take the job <span aria-hidden="true">→</span></button></div>
-              </article>
-              <article class="job-card" data-job-card="saloon">
-                <div class="job-icon icon-saloon" aria-hidden="true">♠</div>
-                <div class="job-info"><span class="job-category">TOWN DUTY · LIVELY</span><h3>Last call at the Lantern</h3><p>Help Ada close up before the piano player starts another round.</p><div class="job-tags"><span>◷ 1 min</span><span>✦ +36 XP</span><span>⚡ 26 energy</span></div></div>
-                <div class="job-reward"><strong>$52</strong><small>+ a chance at a find</small><button class="small-button" type="button" data-job="saloon">Take the job <span aria-hidden="true">→</span></button></div>
-              </article>
-            </div>
-            <p class="panel-footnote"><span aria-hidden="true">✳</span> One-minute shifts · 80% materials · 15% supplies · 3% rare charm · 2% fine gear.</p>
+            <div class="job-list" id="job-list"></div>
+            <p class="panel-footnote"><span aria-hidden="true">✳</span> Each job takes 1 minute. Material percentages show average units per job.</p>
           </section>
 
           <section class="panel trail-panel" aria-labelledby="trail-title">
@@ -149,10 +133,9 @@
         <aside class="side-column">
           <section class="panel daily-panel" aria-labelledby="daily-title">
             <div class="section-topline compact-heading"><div><p class="eyebrow dark-eyebrow">A little something extra</p><h2 id="daily-title">Town errands</h2></div><span class="daily-icon" aria-hidden="true">✳</span></div>
-            <p class="daily-description">Do three jobs before sundown. The clerk has a small thank-you waiting.</p>
-            <div class="quest-row"><span class="quest-check" id="quest-check">·</span><span>Finish jobs around town</span><b id="quest-progress">0 / 3</b></div>
-            <div class="quest-meter"><span id="quest-bar"></span></div>
-            <div class="quest-reward"><span aria-hidden="true">✧</span><span>Town clerk's bonus</span><b>+$30</b></div>
+            <p class="daily-description">Finish 3 jobs, ride a trail, and complete the rotating town errand for the clerk's bonus.</p>
+            <div class="daily-mission-list" id="daily-mission-list"></div>
+            <div class="quest-reward"><span aria-hidden="true">✧</span><span>Complete all three for today's bonus</span><b id="daily-bonus">+$45</b></div>
           </section>
 
           <section class="panel journal-panel" aria-labelledby="journal-title">
@@ -164,7 +147,7 @@
 
           <section class="panel saloon-panel" aria-labelledby="saloon-title">
             <div class="saloon-art" aria-hidden="true"><span>THE</span><strong>LANTERN</strong><small>GOOD COMPANY · HOT COFFEE</small></div>
-            <div class="saloon-copy"><div><p class="eyebrow dark-eyebrow">When the dust gets in your bones</p><h2 id="saloon-title">Rest at the saloon</h2></div><p>Put your feet up, have a coffee, and get some wind back.</p><button class="rest-button" id="rest-button" type="button">Take a breather <span>− $6 · +30 energy</span></button><button class="day-button" id="day-button" type="button">Call it a day &amp; start fresh <span aria-hidden="true">↗</span></button></div>
+            <div class="saloon-copy"><div><p class="eyebrow dark-eyebrow">When the dust gets in your bones</p><h2 id="saloon-title">Rest at the saloon</h2></div><p>Have coffee for a small pick-me-up, or turn in for free and wake up to a fresh board.</p><button class="rest-button" id="rest-button" type="button">Take a breather <span>− $6 · +30 energy</span></button><button class="day-button" id="day-button" type="button">Sleep · free · +60 energy <span aria-hidden="true">↗</span></button><p class="sleep-warning">Sleeping ends today's missions. Any unclaimed bonus is forfeited.</p></div>
           </section>
 
           <div class="aside-note"><span aria-hidden="true">“</span><p>Nothing out here comes easy. That's what makes it worth having.</p><small>— ADA, THE LANTERN</small></div>
@@ -177,9 +160,32 @@
           <span class="board-count" id="inventory-count">0 ITEMS</span>
         </div>
         <div class="workshop-grid">
-          <section class="workshop-section" aria-labelledby="gear-title">
-            <div class="subsection-title"><h3 id="gear-title">On your person</h3><span id="combat-power">POWER 0</span></div>
-            <div class="equipment-slots" id="equipment-slots" aria-live="polite"></div>
+          <section class="workshop-section character-section" aria-labelledby="gear-title">
+            <div class="subsection-title"><h3 id="gear-title">Your kit</h3><span id="combat-power">POWER 0</span></div>
+            <div class="character-sheet">
+              <div class="character-art" aria-label="Mara Quinn wearing frontier gear">
+                <svg viewBox="0 0 220 310" role="img" aria-labelledby="character-svg-title">
+                  <title id="character-svg-title">Illustrated frontier traveler</title>
+                  <ellipse cx="110" cy="292" rx="72" ry="10" fill="#b9a98e" opacity=".45"/>
+                  <path d="M66 110 43 139l-19 73 18 5 27-62 7 76h69l7-77 27 61 19-9-24-76-24-23Z" fill="#806349" stroke="#493a2d" stroke-width="5"/>
+                  <path d="m75 177-12 82 22 17 20-67 18 67 22-17-10-82Z" fill="#493e32" stroke="#352e26" stroke-width="5"/>
+                  <path d="m78 264-7 27 33 2 5-11-18-19m37 0-5 19 7 10 34-3-7-25Z" fill="#332c25" stroke="#251f1a" stroke-width="4"/>
+                  <path d="m76 114 34 31 35-31-13 72-22 16-22-16Z" fill="#a76b43" stroke="#493a2d" stroke-width="4"/>
+                  <path d="m91 137 19 9 18-9 5 41-23 20-23-20Z" fill="#d0aa72" stroke="#493a2d" stroke-width="4"/>
+                  <path d="m74 118-24 18 21 21 17-28m54-11 25 18-21 22-18-28" fill="#806349" stroke="#493a2d" stroke-width="4"/>
+                  <path d="M82 57c0-25 11-39 29-39s29 14 29 39v27c0 25-13 41-29 41S82 109 82 84Z" fill="#c88f65" stroke="#493a2d" stroke-width="4"/>
+                  <path d="M64 63c5-25 26-38 49-38 23 0 41 13 46 35-25-10-65-9-95 3Z" fill="#493a2d"/>
+                  <path d="M52 62c13-8 39-12 62-12s45 5 57 13l-6 10H59Z" fill="#9b7147" stroke="#493a2d" stroke-width="5"/>
+                  <path d="M91 83h11m18 0h11m-25 24c8 5 16 5 23 0" fill="none" stroke="#493a2d" stroke-width="3" stroke-linecap="round"/>
+                  <path d="m154 129 19 19-35 45-9-8Z" fill="#c9b391" stroke="#493a2d" stroke-width="4"/>
+                  <path d="m125 190 17-12 9 9-17 17Z" fill="#544335"/>
+                </svg>
+                <span class="character-nameplate">MARA QUINN <small>FRONTIER HAND · LV <b id="character-level">1</b></small></span>
+              </div>
+              <div class="character-loadout" id="equipment-slots" aria-live="polite"></div>
+            </div>
+            <div class="combat-stats" id="combat-stats"></div>
+            <div class="set-bonuses" id="set-bonuses" aria-label="Equipment set bonuses"></div>
           </section>
           <section class="workshop-section" aria-labelledby="bag-title">
             <div class="subsection-title"><h3 id="bag-title">Your satchel</h3><span>STACKS AUTOMATICALLY</span></div>
@@ -189,6 +195,11 @@
             <div class="subsection-title"><h3 id="recipes-title">The workbench</h3><span>FIELD CRAFTING</span></div>
             <p class="workshop-intro">Turn common finds into dependable equipment. Fine gear takes patience and a bit of luck.</p>
             <div class="recipe-list" id="recipe-list"></div>
+          </section>
+          <section class="workshop-section shop-section" aria-labelledby="shop-title">
+            <div class="subsection-title"><h3 id="shop-title">Dry Creek Outfitters</h3><span>STOCK CHANGES WITH YOUR LEVEL</span></div>
+            <p class="workshop-intro">Spend your wages on supplies and better kit. New stock arrives as your reputation grows.</p>
+            <div class="shop-list" id="shop-list"></div>
           </section>
           <section class="workshop-section goals-section" aria-labelledby="goals-title">
             <div class="subsection-title"><h3 id="goals-title">Frontier ledger</h3><span>LONGER GOALS</span></div>
@@ -202,7 +213,7 @@
           <div><p class="eyebrow dark-eyebrow">The wild country bites back</p><h2>Frontier encounters</h2></div>
           <span class="board-count">EQUIPMENT POWER <b id="battle-power">0</b></span>
         </div>
-        <p class="combat-intro">Choose your opponent. Each round you trade blows; a better weapon hits harder and armor softens the return. You can retreat between rounds.</p>
+        <p class="combat-intro">Weapon damage sets your hit range. Damage bonus, aim, armor, and dodge come from equipped gear and affect every combat round. Retreat when you need to regroup.</p>
         <div class="combat-layout">
           <div class="enemy-list" id="enemy-list"></div>
           <section class="battle-card" aria-labelledby="battle-title">

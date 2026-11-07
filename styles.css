@@ -130,6 +130,7 @@ button:focus-visible, a:focus-visible { outline: 2px solid #dcb875; outline-offs
 .inventory-details { min-width: 0; display: grid; gap: 4px; }
 .inventory-details b { font-size: 10px; }
 .inventory-details small { color: #83796a; font-size: 9px; }
+.inventory-details .material-demand { color: #97784f; font: 8px var(--mono); }
 .inventory-quantity { margin-left: auto; color: #827665; font: 10px var(--mono); }
 .use-button { min-height: 25px; padding: 0 10px; border: 1px solid #b8a88f; background: transparent; color: #62533e; font-size: 9px; cursor: pointer; }
 .use-button:hover { background: #e3d6c3; }
@@ -139,15 +140,21 @@ button:focus-visible, a:focus-visible { outline: 2px solid #dcb875; outline-offs
 .compact-heading h2 { font-size: 18px; }
 .daily-icon { color: #ab8650; font-size: 19px; }
 .daily-description { max-width: 270px; margin: 0 0 15px; color: #746b5f; font-size: 10px; line-height: 1.6; }
-.quest-row { display: flex; align-items: center; gap: 8px; font-size: 10px; }
-.quest-row b { margin-left: auto; color: #756a5b; font: 9px var(--mono); }
-.quest-check { width: 18px; height: 18px; display: grid; place-items: center; border: 1px solid #c6b99f; color: #897b64; font-size: 12px; }
-.quest-check.complete { border-color: #737d55; background: #737d55; color: white; }
-.quest-meter { height: 3px; margin: 10px 0 12px 26px; background: #ddd4c6; }
-.quest-meter span { display: block; width: 0; height: 100%; background: #7b8159; transition: width .3s ease; }
 .quest-reward { display: flex; align-items: center; gap: 7px; padding-top: 10px; border-top: 1px solid #ded4c5; color: #766b5c; font-size: 9px; }
 .quest-reward > span:first-child { color: #ad854a; font-size: 14px; }
 .quest-reward b { margin-left: auto; color: #697049; font: 11px var(--mono); }
+.quest-reward b.bonus-earned { color: #4f713f; }
+.daily-mission-list { display: grid; gap: 11px; margin-bottom: 12px; }
+.daily-task { display: grid; gap: 5px; }
+.daily-task-heading { display: grid; grid-template-columns: 17px minmax(0, 1fr) auto; align-items: center; gap: 7px; color: #584d3d; font-size: 9px; }
+.daily-task-check { width: 16px; height: 16px; display: grid; place-items: center; border: 1px solid #c6b99f; color: #897b64; font-size: 12px; }
+.daily-task-heading strong { color: #756a5b; font: 8px var(--mono); }
+.daily-task > small { padding-left: 24px; color: #83796a; font-size: 8px; line-height: 1.4; }
+.daily-task-meter { height: 3px; margin-left: 24px; background: #ddd4c6; }
+.daily-task-meter span { display: block; height: 100%; background: #878b61; transition: width .3s ease; }
+.daily-task-complete .daily-task-check { border-color: #737d55; background: #737d55; color: white; }
+.daily-task-complete .daily-task-heading strong { color: #60704a; }
+.sleep-warning { margin: 8px 0 0 !important; color: #927454 !important; font-size: 8px !important; line-height: 1.45; }
 .journal-panel { padding: 19px 19px 12px; }
 .journal-day { padding: 5px 6px; background: #e5dac8; color: #7d6a4d; font: 8px var(--mono); }
 .journal-list { display: grid; gap: 11px; max-height: 194px; overflow: auto; margin: 0; padding: 3px 0 0; list-style: none; }
@@ -255,6 +262,43 @@ button:focus-visible, a:focus-visible { outline: 2px solid #dcb875; outline-offs
 .retreat-button:disabled { opacity: .45; cursor: not-allowed; }
 .battle-log { display: grid; gap: 6px; max-height: 120px; overflow: auto; margin: 14px 0 0; padding: 11px 0 0; border-top: 1px solid #ded5c7; color: #766c60; font-size: 9px; line-height: 1.5; list-style: none; }
 .battle-log li::before { margin-right: 7px; color: #ac8552; content: "✳"; }
+.job-drops { display: block; margin-top: 6px; color: #8d795c; font: 8px/1.5 var(--mono); }
+.job-card { grid-template-columns: 41px minmax(0, 1fr) 126px; }
+.job-info { min-width: 0; }
+.job-info .job-drops { max-width: 660px; }
+.character-sheet { display: grid; grid-template-columns: minmax(150px, .75fr) minmax(0, 1.25fr); gap: 12px; align-items: stretch; }
+.character-art { position: relative; display: flex; min-height: 290px; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; background: linear-gradient(160deg, #e8ddca, #d6c3a6); }
+.character-art::before { position: absolute; inset: 12px; border: 1px solid #aa926e; content: ""; pointer-events: none; }
+.character-art svg { width: min(100%, 190px); height: 245px; margin-top: 7px; }
+.character-nameplate { position: relative; z-index: 1; display: grid; gap: 4px; padding: 5px 8px; background: #40382d; color: #f1e4cb; font: 9px var(--mono); letter-spacing: .08em; text-align: center; }
+.character-nameplate small { color: #cbb38a; font-size: 7px; }
+.character-loadout { display: grid; align-content: center; gap: 7px; }
+.equipment-slot { grid-template-columns: 48px minmax(0, 1fr) 28px; min-height: 39px; padding: 7px; }
+.equipment-slot b { font-size: 9px; }
+.equipment-slot .slot-damage { grid-column: 2 / 4; margin-top: -3px; color: #897454; font: 8px var(--mono); }
+.combat-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 12px; }
+.combat-stats > div { display: grid; gap: 4px; padding: 8px 6px; border: 1px solid #ded5c7; background: #fffaf1; text-align: center; }
+.combat-stats span { color: #827665; font-size: 8px; }
+.combat-stats b { color: #65704b; font: 10px var(--mono); }
+.set-bonuses { display: grid; gap: 6px; margin-top: 9px; }
+.set-bonus-row { display: grid; gap: 3px; padding: 7px 9px; border: 1px solid #ded5c7; background: #fffaf1; }
+.set-bonus-row b { color: #655842; font-size: 8px; }
+.set-bonus-row small, .set-item-label { color: #83796a; font-size: 8px; line-height: 1.45; }
+.set-bonus-row.set-bonus-active { border-color: #a6a47b; background: #f0f0e2; }
+.set-bonus-row.set-bonus-active b { color: #596343; }
+.recipe-stats { margin-top: 3px; color: #627048 !important; }
+.locked-recipe { opacity: .7; }
+.locked-recipe .craft-button { color: #e9ddc9; }
+.shop-list { display: grid; gap: 7px; }
+.shop-item { display: grid; grid-template-columns: 31px minmax(0, 1fr) auto; align-items: center; gap: 9px; padding: 8px; border: 1px solid #ded5c7; background: #fffaf1; }
+.shop-item.locked-stock { opacity: .63; }
+.shop-icon { width: 30px; height: 30px; display: grid; place-items: center; background: #e8ddc9; color: #966a40; font-size: 17px; }
+.shop-details { min-width: 0; display: grid; gap: 4px; }
+.shop-details b { font-size: 9px; }
+.shop-details small { color: #83796a; font-size: 8px; line-height: 1.4; }
+.shop-buy { min-height: 26px; padding: 0 8px; border: 0; background: #38342d; color: #f3eadc; font-size: 8px; cursor: pointer; white-space: nowrap; }
+.shop-buy:hover:not(:disabled) { background: #80563a; }
+.shop-buy:disabled { opacity: .52; cursor: not-allowed; }
 
 .guide-page { min-height: 100vh; }
 .guide-shell { width: min(960px, 90%); margin: 50px auto; }
@@ -285,6 +329,8 @@ button:focus-visible, a:focus-visible { outline: 2px solid #dcb875; outline-offs
   .route-thumb { width: 27px; height: 30px; flex-basis: 27px; }
   .route-button b { font-size: 8px; }
   .route-button small { font-size: 7px; }
+  .job-drops { font-size: 7px; }
+  .character-sheet { grid-template-columns: minmax(135px, .75fr) minmax(0, 1.25fr); }
 }
 
 @media (max-width: 680px) {
@@ -333,6 +379,13 @@ button:focus-visible, a:focus-visible { outline: 2px solid #dcb875; outline-offs
   .side-column { grid-template-columns: 1fr 1fr; align-items: start; }
   .workshop-grid { grid-template-columns: 1fr; gap: 11px; }
   .combat-layout { grid-template-columns: 1fr; }
+  .character-sheet { grid-template-columns: minmax(120px, .75fr) minmax(0, 1.25fr); gap: 8px; }
+  .character-art { min-height: 250px; }
+  .character-art svg { height: 210px; }
+  .equipment-slot { grid-template-columns: 39px minmax(0, 1fr) 25px; padding: 6px 5px; }
+  .slot-label { font-size: 7px; }
+  .combat-stats { grid-template-columns: repeat(2, 1fr); }
+  .job-drops { font-size: 7px; }
   .daily-panel, .journal-panel { min-height: 176px; }
   .saloon-panel { grid-column: 1; }
   .aside-note { grid-column: 2; align-self: center; }
@@ -344,12 +397,15 @@ button:focus-visible, a:focus-visible { outline: 2px solid #dcb875; outline-offs
   .main-nav { gap: 7px; }
   .nav-link { font-size: 7px; }
   .job-card { grid-template-columns: 29px minmax(0, 1fr) 88px; gap: 6px; padding: 8px 6px; }
+  .job-card { grid-template-columns: 29px minmax(0, 1fr) 78px; }
   .job-icon { width: 28px; height: 28px; }
-  .job-tags span:nth-child(2) { display: none; }
   .route-thumb { width: 22px; height: 26px; flex-basis: 22px; }
   .route-button { gap: 3px; padding: 4px; }
   .route-button small { white-space: normal; }
   .side-column { grid-template-columns: 1fr; }
+  .character-sheet { grid-template-columns: 1fr; }
+  .character-art { min-height: 260px; }
+  .character-art svg { height: 215px; }
   .daily-panel, .journal-panel { min-height: 0; }
   .saloon-panel, .aside-note { grid-column: 1; }
 }
